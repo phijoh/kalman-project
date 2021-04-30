@@ -1,19 +1,12 @@
-# kalman-project
+# kalman-project 🎈 👀(🧠 / 🪐)
 
-This code base is using the Julia Language and [DrWatson](https://juliadynamics.github.io/DrWatson.jl/stable/)
-to make a reproducible scientific project named
-> kalman-project
+Motion prediction with Kalman filters. They said it should not be done and they were probably right. 
+## Reproduce
 
-To (locally) reproduce this project, do the following:
+To reproduce with [DrWatson](https://juliadynamics.github.io/DrWatson.jl/dev/),
 
-0. Download this code base. Notice that raw data are typically not included in the
-   git-history and may need to be downloaded independently.
-1. Open a Julia console and do:
-   ```
-   julia> using Pkg
-   julia> Pkg.activate("path/to/this/project")
-   julia> Pkg.instantiate()
-   ```
-
-This will install all necessary packages for you to be able to run the scripts and
-everything should work out of the box.
+```
+julia> using Pkg
+julia> Pkg.activate("path/to/this/project")
+julia> Pkg.instantiate()
+```
