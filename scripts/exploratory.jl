@@ -1,45 +1,26 @@
-using Distributions, Random
+include("dgp.jl")
+include("kalmanfilter.jl")
 
-using StateSpaceRoutines
+using Distributions, Random
+using LinearAlgebra
+
+using Plots
 
 Random.seed!(121212)
 
-σy = √(π)
-τ = π/5
-T = 100
+pixels, T = 400, 60
 
-ε = Normal(0, σy^2)
-Y = range(0, τ*T, length = T) .+ (rand(ε, T) .* range(1.0, 0.01, length=T))
+σ = 5
+Σ = [
+    σ^2 10;
+    10 σ^2
+] # Matrix(σ^2 * I, 2, 2) # Variance covariance matrix
 
-P₁ = 3.5
-a₁ = 0
+ε = MultivariateNormal(zeros(2), Σ)
 
-A = zeros(Float64, T)
-P = copy(A)
-A[1] = a₁
-P[1] = P₁
+Y = generatedata(pixels, T, ε)
 
-for (t, y) in enumerate(Y)
-    if t == T continue end
+Ŷ, P, posterror = kalmanfilter(Y; a₁=[0, 100], Σ=Σ)
 
-    a, p = A[t], P[t]
-
-    v = y - a # Error
-    F = σy^2 + p # Variance update
-
-    K = p / F
-
-    p′ = p*(1-K) + 1
-    a′ = a + K*v
-
-    A[t+1] = a′
-    P[t+1] = p′ + 1
-
-    gain[t] = K
-
-    print("Step $t: v = $v, τ ≈ $K \n")
-
-end
-
-plot(1:T, A, ribbon = P, label= "filter", legend=:bottomright)
-scatter!(1:T, Y, label = "data", markersize=1.2)
+plot(Y, c=:blue, label="true")
+plot!(Ŷ, c=:red, label="estimate")
