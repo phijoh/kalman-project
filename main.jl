@@ -3,6 +3,11 @@ using Random, Distributions
 using Turing, ParticleFilters
 
 using Plots, StatsPlots
+using DotEnv
+
+# Environment variables
+DotEnv.config()
+shallplot = (get(ENV, "PLOT", "false") |> lowercase) == "true"
 
 Random.seed!(1123)
 
@@ -23,16 +28,29 @@ x, u = dgp(x₀, u₀, Dₓ, Dᵥ, σₚ², Δt; T=4_000)
 model = movement(x, u, Δt)
 chain = sample(model, NUTS(0.65), 3_000)
 
-Dᵥest = mean(chain[:Dᵥ])
-Dₓest = mean(chain[:Dₓ])
-σₚ²est = mean(chain[:σₚ²])
 
-σᵥ = inv(inv(σₚ²) + inv(Dᵥ))
-γ = inv(1 + Dᵥ / σₚ²)
+if shallplot
+    Dᵥest = mean(chain[:Dᵥ])
+    Dₓest = mean(chain[:Dₓ])
+    σₚ²est = mean(chain[:σₚ²])
 
-σᵥest = inv(inv(σₚ²est) + inv(Dᵥest))
-γest = inv(1 + Dᵥest / σₚ²est)
+    σᵥ = inv(inv(σₚ²) + inv(Dᵥ))
+    γ = inv(1 + Dᵥ / σₚ²)
 
-println("σᵥ = $σᵥ, σᵥest = $σᵥest")
-println("γ = $γ, γest = $γest")
+    σᵥest = inv(inv(σₚ²est) + inv(Dᵥest))
+    γest = inv(1 + Dᵥest / σₚ²est)
 
+    println("σᵥ = $σᵥ, σᵥest = $σᵥest")
+    println("γ = $γ, γest = $γest")
+
+    plotpath = get(ENV, "PLOT_PATH", nothing)
+    if !isnothing(plotpath)
+
+        plot(chain)
+        
+        filename = joinpath(plotpath, "chain.png")
+        savefig(filename)
+
+    else println("No plot path provided in .env") end
+
+end
