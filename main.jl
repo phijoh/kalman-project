@@ -23,13 +23,14 @@ Dᵥ = 0.25
 x₀ = [100., 0.]
 u₀ = [0., 0.]
 
-x, u = dgp(x₀, u₀, Dₓ, Dᵥ, σₚ², Δt; T=4_000)
+x, u = dgp(x₀, u₀, Dₓ, Dᵥ, σₚ², Δt; T=1_000)
 
 model = movement(x, u, Δt)
-chain = sample(model, NUTS(0.65), 3_000)
+chain = sample(model, NUTS(0.65), 1_000)
 
 
 if shallplot
+    
     Dᵥest = mean(chain[:Dᵥ])
     Dₓest = mean(chain[:Dₓ])
     σₚ²est = mean(chain[:σₚ²])
@@ -46,9 +47,9 @@ if shallplot
     plotpath = get(ENV, "PLOT_PATH", nothing)
     if !isnothing(plotpath)
 
-        plot(chain)
+        plot(chain, dpi=200)
         
-        filename = joinpath(plotpath, "chain.png")
+        filename = joinpath(plotpath, "estimation")
         savefig(filename)
 
     else println("No plot path provided in .env") end

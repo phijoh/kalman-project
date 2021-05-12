@@ -1,4 +1,4 @@
-@model function movement(x, u, Δt) 
+@model movement(x, u, Δt) = begin
 
     T, M = size(x)
 
@@ -23,7 +23,7 @@
     
 end
 
-@model function restrmovement(x, u, Δt)
+@model restrmovement(x, u, Δt) = begin
 
 
 end
