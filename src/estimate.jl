@@ -1,23 +1,32 @@
-Random.seed!(12)
+@model movement(x, u, Δt) = begin
 
-@model movement(x, v, v₁, Δ) = begin
+    T, M = size(x)
 
-    T, M = size(v)
+    # Parameters to estimate
+    Dₓ ~ InverseGamma(2, 0.5)
+    Dᵥ ~ InverseGamma(2, 0.5)
+    σₚ² ~ InverseGamma(2, 0.5)
 
-    k = 1.
-    aₓ ~ InverseGamma(2, 3)
-    h ~ InverseGamma(2, 3)
+    νₓ = Dₓ 
+    νᵤ = inv(inv(σₚ²) + inv(Dᵥ))
+    γ = inv(1 + Dᵥ / σₚ²)
 
-    σₓ = k + aₓ
-    σᵧ = h * σₓ
+    x[1, :] ~ MvNormal(x[1, :], νₓ * Δt)
+    u[1, :] ~ MvNormal(u[1, :], νᵤ * Δt)
 
-    Σ = [
-        σₓ 0 ;
-        0 σᵧ
-    ]
+    for t = 2:T
+        
+        νₓ = Dₓ 
+        νᵤ = inv(inv(σₚ²) + inv(Dᵥ))
+        γ = inv(1 + Dᵥ / σₚ²)
 
-    v[1, :] ~ MvNormal(v₁, Σ)
+        xₚ = x[t - 1, :]
+        uₚ = u[t - 1, :]
 
-    for t = 2:T v[t, :] ~ MvNormal(v[t - 1, :], Σ) end
+        x[t, :] ~ MvNormal(xₚ + Δt * uₚ, νₓ * Δt)
+        u[t, :] ~ MvNormal(γ * uₚ , νᵤ * Δt)
 
+    end
+    
 end
+
