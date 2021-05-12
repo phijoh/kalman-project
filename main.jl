@@ -15,11 +15,11 @@ include("src/utils.jl")
 include("src/estimate.jl")
 include("src/dgp.jl")
 
-Dₓ = 0.2
-Dᵥ = 0.25
-σₚ² = 0.25
+Dₓ = 2.
+Dᵥ = 2.
+σₚ² = 0.5
 
-Δt = 0.05
+Δt = 1.
 x₀ = [100., 0.]
 u₀ = [0., 0.]
 
