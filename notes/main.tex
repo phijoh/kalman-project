@@ -1,0 +1,78 @@
+\documentclass[american]{scrartcl}
+
+    \newcommand{\lang}{en}
+
+    \usepackage{babel}
+    \usepackage[utf8]{inputenc}
+
+    \usepackage{csquotes}
+
+    \usepackage{amsmath, amssymb, mathtools}
+    \usepackage{bm}
+
+    \usepackage{graphicx}
+    \usepackage{tikz} 
+
+    \usepackage{subfiles} % Load last
+
+    % Formatting
+    \setlength{\parindent}{0em}
+    \setlength{\parskip}{0.5em}
+    \setlength{\fboxsep}{1em}
+
+    % Graphs
+    \usetikzlibrary{positioning, arrows.meta, calc, decorations.markings, math, matrix}
+
+    \tikzset{
+        main 
+        node/.style={
+            circle, draw,minimum size=2cm,inner sep=3pt
+        },
+    }
+    
+    % Math commands
+    \newcommand{\E}{\mathbb{E}}
+    \newcommand{\R}{\mathbb{R}}
+    \newcommand{\V}{\mathbb{V}}
+
+    \newcommand{\matr}[1]{\bm{#1}}
+	\newcommand{\set}[1]{\left\{#1\right\}}
+	\newcommand{\diag}{\text{diag}}
+
+    \DeclareMathOperator{\Tr}{Tr}
+
+    \DeclarePairedDelimiter\abs{\lvert}{\rvert}%
+    \DeclarePairedDelimiter\norm{\lVert}{\rVert}%
+
+    \usepackage[
+        bibencoding=utf8, 
+        style=apa
+    ]{biblatex}
+    
+    \title{Notes}
+
+    \author{Philippa Johnson and Andrea Titton}
+    
+\begin{document}
+
+\maketitle
+
+\section{Ratio estimation}
+
+If the estimation is done for $\rho :=  \frac{\sigma^2_p}{D_v}$ then,
+
+\begin{equation}
+    \gamma = \left( 1 + \rho \right)^{-1}
+\end{equation}
+
+and,
+
+\begin{equation}
+    \begin{split}
+        \V(v_u)^{-1} = \frac{1}{\sigma^2_p} + \frac{1}{D_v} &= \frac{\sigma^2_p + D_v}{\sigma^2_p \cdot D_v} \\
+        &= \frac{1 + \rho}{\sigma^2_p}
+    \end{split}
+\end{equation}
+
+
+\end{document}
