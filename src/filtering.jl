@@ -1,7 +1,6 @@
 
 μ₀ = zeros(2)
 
-# FIXME
 function cartesiantomatrix(indices::Vector{CartesianIndex{2}})
     N = length(indices)
     mform = zeros(Int64, N, 2)
@@ -27,13 +26,14 @@ end
 
 function filtering(frames)
 
-    Nframes, height, width = size(frames)
+    Nframes  = size(frames, 1)
+    side = size(frames, 2)
 
     position = zeros(Nframes, 2)
 
-    @threads for frame in 1:Nframes
-        x, y = detect(frames[frame, :, :])
-        position[frame, :] = [x, y]
+    @threads for f in 1:Nframes
+        x, y = detect(frames[f, :, :])
+        position[f, :] = @. (2 * [x, y] / side) - 1
     end
 
     return position
