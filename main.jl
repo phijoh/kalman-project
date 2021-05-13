@@ -24,10 +24,17 @@ include("src/loadposition.jl")
 include("src/filtering.jl")
 include("src/estimate.jl")
 
+# Diagnostic
+include("src/diagnostic/chain.jl")
+include("src/diagnostic/extrapolate.jl")
+
+Plots.scalefontsizes(0.6)
+
 Random.seed!(seed)
 
 Δt = 1 / framespersecond
 seconscreen = 128 / 200 # FIXME: Figure out from .mat file
+accrate = 0.95
 
 Nframeswithwedge = ceil(Int64, inv(Δt) * seconscreen)
 
@@ -38,31 +45,17 @@ x = loadposition(
     
 u = getvelocity(x, Δt)
 
-if shallplot
-    verbose && println("Estimating model...")
-    model = movement(x, u, Δt)
+verbose && println("Estimating model...")
+model = movement(x, u, Δt)
 
-    chain = sample(model, NUTS(0.65), 2000, verbose=verbose)
-        
-    Dᵥest = mean(chain[:Dᵥ])
-    Dₓest = mean(chain[:Dₓ])
-    σₚ²est = mean(chain[:σₚ²])
+chain = sample(model, NUTS(accrate), 2000, verbose=verbose)
 
-    σᵥest = inv(inv(σₚ²est) + inv(Dᵥest))
-    γest = inv(1 + Dᵥest / σₚ²est)
+shallplot && describechain(chain; verbose=verbose, plotpath=plotpath)
 
-    println("σᵥest = $σᵥest")
-    println("γest = $γest")
+verbose && println("...done!")
 
-    if !isnothing(plotpath)
+x̂, û = extrapolate(x, u, chain, Δt; T=5)
 
-        plot(chain, dpi=200)
-        
-        filename = joinpath(plotpath, "estimation")
-        savefig(filename)
+shallplot && plotfirstlikelihood(x̂, û, chain; plotpath=plotpath)
 
-    else println("No plot path provided in .env") end
-
-    verbose && println("...done!")
-
-end
+Plots.resetfontsizes()
