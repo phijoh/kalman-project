@@ -3,13 +3,13 @@
     T = size(x, 1)
 
     # Parameters to estimate
-    Dₓ ~ InverseGamma(3, 300)
-    Dᵥ ~ InverseGamma(3, 300)
-    σₚ² ~ InverseGamma(3, 300)
+    Dₓ ~ InverseGamma(2, 1)
+    Dᵥ ~ InverseGamma(2, 1)
+    σₚ² ~ InverseGamma(2, 1)
 
     # Initial position
-    x[1, :] ~ MvNormal([0., 0.], 2.)
-    u[1, :] ~ MvNormal([0., 0.], 2.)
+    x[1, :] ~ MvNormal([0., 0.], 1.)
+    u[1, :] ~ MvNormal([0., 0.], 1.)
 
     for t = 2:T
 
