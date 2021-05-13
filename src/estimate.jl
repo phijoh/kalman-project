@@ -1,23 +1,27 @@
 @model function movement(x, u, Δt)
 
-    T, M = size(x)
+    T = size(x, 1)
 
     # Parameters to estimate
-    Dₓ ~ InverseGamma(2, 0.5)
-    Dᵥ ~ InverseGamma(2, 0.5)
-    σₚ² ~ InverseGamma(2, 0.5)
+    Dₓ ~ InverseGamma(3, 300)
+    Dᵥ ~ InverseGamma(3, 300)
+    σₚ² ~ InverseGamma(3, 300)
 
-    for t = 1:T
-        
+    # Initial position
+    x[1, :] ~ MvNormal([0., 0.], 2.)
+    u[1, :] ~ MvNormal([0., 0.], 2.)
+
+    for t = 2:T
+
         νₓ = Dₓ 
         νᵤ = inv(inv(σₚ²) + inv(Dᵥ))
         γ = inv(1 + Dᵥ / σₚ²)
 
-        xₚ = t > 1 ? x[t - 1, :] : x[1, :]
-        uₚ = t > 1 ? u[t - 1, :] : u[1, :]
+        uₑ = u[t - 1, :] * γ
+        xₑ = x[t - 1, :] + Δt * uₑ
 
-        x[t, :] ~ MvNormal(xₚ + Δt * uₚ, νₓ * Δt)
-        u[t, :] ~ MvNormal(γ * uₚ, νᵤ * Δt)
+        x[t, :] ~ MvNormal(xₑ, νₓ * Δt)
+        u[t, :] ~ MvNormal(uₑ, νᵤ * Δt)
 
     end
     
