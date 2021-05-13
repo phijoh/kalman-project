@@ -1,50 +1,55 @@
+using JLD
 using LinearAlgebra
 using Random, Distributions
 using Turing, ParticleFilters
 
+using MAT, ImageFiltering
+using Base.Threads
+
 using Plots, StatsPlots
 using DotEnv
 
-# Environment variables
-DotEnv.config()
-shallplot = (get(ENV, "PLOT", "false") |> lowercase) == "true"
+# Environment
+include("src/utilities/env.jl")
+include("src/loadenv.jl")
 
-Random.seed!(1123)
+# Utilities
+include("src/utilities/matrix.jl") 
+include("src/utilities/datautils.jl")
 
-include("src/utils.jl")
+# Data
+include("src/loadposition.jl")
+
+# Estimation
+include("src/filtering.jl")
 include("src/estimate.jl")
-include("src/dgp.jl")
 
-Dₓ = 2.
-Dᵥ = 2.
-σₚ² = 0.5
+Random.seed!(seed)
 
-Δt = 1.
-x₀ = [100., 0.]
-u₀ = [0., 0.]
+Δt = 1 / framespersecond
+seconscreen = 128 / 200 # FIXME: Figure out from .mat file
 
-x, u = dgp(x₀, u₀, Dₓ, Dᵥ, σₚ², Δt; T=1_000)
+Nframeswithwedge = ceil(Int64, inv(Δt) * seconscreen)
 
-model = movement(x, u, Δt)
-chain = sample(model, NUTS(0.65), 1_000)
-
+x = loadposition(datapath; cache=cache, verbose=verbose, framelimit=Nframeswithwedge)
+u = getvelocity(x, Δt)
 
 if shallplot
-    
+    verbose && println("Estimating model...")
+    model = movement(x, u, Δt)
+
+    chain = sample(model, NUTS(0.65), 2000, verbose=verbose)
+        
     Dᵥest = mean(chain[:Dᵥ])
     Dₓest = mean(chain[:Dₓ])
     σₚ²est = mean(chain[:σₚ²])
 
-    σᵥ = inv(inv(σₚ²) + inv(Dᵥ))
-    γ = inv(1 + Dᵥ / σₚ²)
-
     σᵥest = inv(inv(σₚ²est) + inv(Dᵥest))
     γest = inv(1 + Dᵥest / σₚ²est)
 
-    println("σᵥ = $σᵥ, σᵥest = $σᵥest")
-    println("γ = $γ, γest = $γest")
+    println("σᵥest = $σᵥest")
+    println("γest = $γest")
 
-    plotpath = get(ENV, "PLOT_PATH", nothing)
     if !isnothing(plotpath)
 
         plot(chain, dpi=200)
@@ -53,5 +58,7 @@ if shallplot
         savefig(filename)
 
     else println("No plot path provided in .env") end
+
+    verbose && println("...done!")
 
 end
