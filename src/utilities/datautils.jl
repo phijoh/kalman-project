@@ -26,7 +26,9 @@ function getvelocity(x::Matrix{Float64}, Δt::Float64)
     T, M = size(x)
     u = zeros(T, M)
 
-    @threads for t in 2:T u[t, :] = (x[t, :] - x[t - 1, :]) / Δt end
+    @threads for t in 1:(T - 1) 
+        u[t, :] = (x[t + 1, :] - x[t, :]) / Δt 
+    end
 
     return u
 end
