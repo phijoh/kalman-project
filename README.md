@@ -1,9 +1,11 @@
-# kalman-project 🎈 👀(🧠 / 🪐)
+# Bayesian motion prediction 🎈 👀(🧠 / 🪐)
 
-Motion prediction with Kalman filters. They said it should not be done and they were probably right. 
+Motion prediction with Bayesian estimations. They said it should not be done and they were probably right. 
+
+![alt text](plots/small/ext_read.jpg)
 ## Reproduce
 
-To reproduce with [DrWatson](https://juliadynamics.github.io/DrWatson.jl/dev/),
+To reproduce use,
 
 ```
 julia> using Pkg
