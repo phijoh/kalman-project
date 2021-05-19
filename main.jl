@@ -33,8 +33,6 @@ include("src/diagnostic/mcextrapolate.jl")
 # Plots
 include("src/plots/extrapolations.jl")
 
-Plots.scalefontsizes(0.6)
-
 Random.seed!(seed)
 
 Δt = 1 / framespersecond
@@ -54,6 +52,7 @@ model = movement(x, u, Δt)
 chain = sample(model, NUTS(1000, 0.65), 1000, verbose=verbose)
 
 if shallplot
+    Plots.scalefontsizes(0.6)
 
     x̂mc = mcextrapolate(x, u, chain, Δt; T=50, B=1000)
     x̂det, ûdet = extrapolate(x, u, chain, Δt; T=50)
@@ -67,7 +66,7 @@ if shallplot
     
     plotmontecarlo(x, x̂mc; plotpath=plotpath)
     
+    Plots.resetfontsizes()
 end
 
-Plots.resetfontsizes()
 verbose && println("...done!")
