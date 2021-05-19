@@ -600,3 +600,4 @@ TSWLatexianTemp*
 #*Notes.bib
 notes/*.pdf
 data/input
+plots/

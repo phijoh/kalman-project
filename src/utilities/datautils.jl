@@ -32,3 +32,44 @@ function getvelocity(x::Matrix{Float64}, Δt::Float64)
 
     return u
 end
+
+"""
+Make constructor for frames from TG_test.mat
+"""
+function framegeneratorfactory(tgfile)
+    
+    wedge = tgfile["stimMask"]
+    flashduration = convert(Int64, tgfile["flashDur"])
+
+    S = size(wedge, 1)
+
+    function framegenerator(speed::Float64, inducerduration::Int64, opacity::Float64; dynamic=false)
+
+        Δθ = deg2rad(speed)
+        
+        currentwedge = opacity * copy(wedge)
+        inducernoise = rand(S, S)
+        alphablend(frame) = @. frame + inducernoise * (1 - frame) 
+
+        T = inducerduration + flashduration
+        frames = zeros(T, S, S)
+        frames[1, :, :] = alphablend(currentwedge)
+        
+        for inducerframe in 2:inducerduration 
+
+            currentwedge = imrotate(currentwedge, Δθ, axes(currentwedge))
+            replace!(currentwedge, NaN => 0.)
+
+            frames[inducerframe, :, :] = alphablend(currentwedge)
+
+        end
+
+        @threads for noiseframe in inducerduration:T frames[noiseframe, :, :] = dynamic ? rand(S, S) : inducernoise end
+
+        return frames
+
+    end 
+
+    return framegenerator
+
+end

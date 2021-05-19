@@ -2,8 +2,10 @@ using JLD
 using LinearAlgebra
 using Random, Distributions
 using Turing, ParticleFilters
+using Parameters
 
 using MAT, ImageFiltering
+using Images, Rotations, CoordinateTransformations
 using Base.Threads
 
 using Printf
@@ -34,39 +36,48 @@ include("src/diagnostic/mcextrapolate.jl")
 include("src/plots/extrapolations.jl")
 
 Random.seed!(seed)
-
 Δt = 1 / framespersecond
-seconscreen = 128 / 200 # FIXME: Figure out from .mat file
 
-Nframeswithwedge = ceil(Int64, inv(Δt) * seconscreen) 
+# FIXME: Move function and plot name based on parameter
+function simulate(speed, duration, opacity; dynamic=false, plotpath=plotpath, verbose=verbose)
 
-x = loadposition(
-    datapath; 
-    cache=cache, verbose=verbose, framelimit=Nframeswithwedge)
-    
-u = getvelocity(x, Δt)
+    plotpath = joinpath(plotpath, speed < 1 ? "slow" : "fast")
 
-verbose && println("Estimating model...")
-model = movement(x, u, Δt)
+    makeframes = loadgeneratedframe(datapath)
+    frames = makeframes(speed, duration, opacity; dynamic=dynamic)
 
-chain = sample(model, NUTS(1000, 0.65), 1000, verbose=verbose)
+    x = filtering(frames[1:(duration - 1), :, :])
 
-if shallplot
+    u = getvelocity(x, Δt)
+
+    verbose && println("Estimating model...")
+    model = movement(x, u, Δt)
+
+    chain = sample(model, NUTS(1000, 0.65), 1000, verbose=verbose)
+
     Plots.scalefontsizes(0.6)
 
-    x̂mc = mcextrapolate(x, u, chain, Δt; T=50, B=1000)
-    x̂det, ûdet = extrapolate(x, u, chain, Δt; T=50)
+    x̂mc = mcextrapolate(x, u, chain, Δt; T=16, B=1_000)
+    x̂det, ûdet = extrapolate(x, u, chain, Δt; T=16)
 
     describechain(chain; verbose=verbose, plotpath=plotpath)
     
     plotfirstlikelihood(
         x, x̂det, chain; plotpath=plotpath, 
-        xs=0.:0.01:0.5, ys=0.:0.01:0.5
+        xs=-0.5:0.01:0., ys=0.5:0.01:1.
     )
     
     plotmontecarlo(x, x̂mc; plotpath=plotpath)
     
     Plots.resetfontsizes()
+    
+
+    verbose && println("...done!")
+
+    return x̂mc
+
 end
 
-verbose && println("...done!")
+
+x̂slow = simulate(0.6, 128, 1.)
+x̂fast = simulate(1.2, 128, 1.)
