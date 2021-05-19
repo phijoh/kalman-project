@@ -55,8 +55,8 @@ chain = sample(model, NUTS(1000, 0.65), 1000, verbose=verbose)
 
 if shallplot
 
-    x̂mc = mcextrapolate(x, u, chain, Δt; T=10, B=1000)
-    x̂det, ûdet = extrapolate(x, u, chain, Δt; T=5)
+    x̂mc = mcextrapolate(x, u, chain, Δt; T=50, B=1000)
+    x̂det, ûdet = extrapolate(x, u, chain, Δt; T=50)
 
     describechain(chain; verbose=verbose, plotpath=plotpath)
     

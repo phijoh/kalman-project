@@ -26,24 +26,30 @@ function plotmontecarlo(x, x̂; plotpath="")
 
     Nsimulations = size(x̂, 3)
 
-    lims = extrema(x) .* 1.05
+    xlims = extrema(vcat(x[:, 1], vec(x̂[1, :, :])))
+    ylims = extrema(vcat(x[:, 2], vec(x̂[2, :, :])))
 
     plot(
         x[:, 1], x[:, 2], label="estimate", c=:blue,
-        xlabel="x", ylabel="y", legend=:bottomright, aspect_ratio=1, dpi=300, xlims=lims, ylims=lims
+        xlabel="x", ylabel="y", legend=:bottomright, aspect_ratio=1, dpi=500, 
+        xlims=xlims, ylims=ylims
     )
 
-
+    
     for n in 1:Nsimulations
 
         plot!(
             x̂[1, :, n], x̂[2, :, n], label=:none,
-            c=:red, alpha=0.01, aspect_ratio=1,
-            xlims=lims, ylims=lims
-        )
-
+            c=:red, alpha=0.05, aspect_ratio=1,
+            xlims=xlims, ylims=ylims
+            )
+            
     end
-
+    
+    x̂ₘ = squeeze(mean(x̂, dims=3))'
+        
+    plot!(x̂ₘ[:, 1], x̂ₘ[:, 2], label="mean extrapolation", c=:black)
+        
     savefig(joinpath(plotpath, "mcextrapolation"))
 
 end
