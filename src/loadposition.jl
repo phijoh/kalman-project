@@ -37,8 +37,11 @@ function loadposition(datapath; cache=false, verbose=false, framelimit=nothing, 
 
 end
 
-function loadgeneratedframe(datapath)
-    inpath = joinpath(datapath, "TG_test.mat")
+"""
+Returns a generator frame function based on a TG_test.mat file
+"""
+function loadgeneratedframe(datapath; filename="TG_test.mat", verbose=false)
+    inpath = joinpath(datapath, filename)
 
     verbose && println("Loading frames from $inpath...")
     tgfile = matread(inpath)

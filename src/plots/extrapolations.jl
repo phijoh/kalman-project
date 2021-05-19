@@ -1,12 +1,18 @@
-function plotfirstlikelihood(x, x̂, chain; plotpath="", xs=-1.:0.005:1, ys=-1.0:0.005:1.0)
+function plotfirstlikelihood(x, x̂, chain; filename="extrapolations", plotpath="", xs=-1.:0.005:1, ys=-1.0:0.005:1.0)
     
     likelihood = (x₁, x₂) -> pdf(MvNormal(x̂[1, :], mean(chain, :Dₓ)), [x₁, x₂])
+
+    xlims = extrema(x̂[:, 1])
+    ylims = extrema(x̂[:, 2])
+    
+    xs = range(xlims..., length=1_000)
+    ys = range(ylims..., length=1_000)
     
     heatmap(
         xs, ys, likelihood, 
         title="Position extrapolation with first point likelihood",
         xlabel="x", ylabel="y", legend=:none, aspect_ratio=1,
-        xlims=extrema(xs), ylims=extrema(ys), dpi=300)
+        xlims=xlims, ylims=ylims, dpi=300)
 
     scatter!(
         x[:, 1], x[:, 2], 
@@ -18,11 +24,11 @@ function plotfirstlikelihood(x, x̂, chain; plotpath="", xs=-1.:0.005:1, ys=-1.0
         label="extrapolation", c=:black,
         markersize=2)
 
-    savefig(joinpath(plotpath, "extrapolation"))
+    savefig(joinpath(plotpath, filename))
 
 end
 
-function plotmontecarlo(x, x̂; plotpath="")
+function plotmontecarlo(x, x̂; plotpath="", filename="mcextrapolation")
 
     Nsimulations = size(x̂, 3)
 
@@ -50,6 +56,6 @@ function plotmontecarlo(x, x̂; plotpath="")
         
     plot!(x̂ₘ[:, 1], x̂ₘ[:, 2], label="mean extrapolation", c=:black)
         
-    savefig(joinpath(plotpath, "mcextrapolation"))
+    savefig(joinpath(plotpath, filename))
 
 end

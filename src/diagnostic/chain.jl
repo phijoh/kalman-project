@@ -1,4 +1,4 @@
-function describechain(c::Chains; verbose=false, plotpath=nothing)
+function describechain(c::Chains; verbose=false, plotpath=nothing, filename="chain")
     Dᵥ = mean(c, :Dᵥ)
     Dₓ = mean(c, :Dₓ)
     σₚ² = mean(c, :σₚ²)
@@ -17,9 +17,9 @@ function describechain(c::Chains; verbose=false, plotpath=nothing)
 
     if !isnothing(plotpath)
 
-        plot(chain, dpi=200)
+        plot(c, dpi=200)
         
-        filename = joinpath(plotpath, "estimation")
+        filename = joinpath(plotpath, filename)
         savefig(filename)
     end
 end
