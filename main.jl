@@ -19,7 +19,6 @@ include("src/loadenv.jl")
 # Utilities
 include("src/utilities/matrix.jl") 
 include("src/utilities/datautils.jl")
-include("src/utilities/torus.jl")
 
 # Data
 include("src/loadposition.jl")
