@@ -1,13 +1,21 @@
 
-function selectrandomparticles(frames, nparticles::Int64)
+function selectrandomparticles(framesize, nparticles::Int64)
 
-    T, width, height = size(frames)
+    width, height = framesize
 
-    particles = zeros(Int64, nparticles, 2)
-    particles[:,1] = sample(1:width, nparticles; replace=false)
-    particles[:,2] = sample(1:height, nparticles; replace=false)
+    particles = zeros(Int64, nparticles, 4)
+    x = sample(1:width, nparticles)
+    y = sample(1:height, nparticles)
 
-    weights = ones(nparticles)./nparticles
+    u = sample(-(width ÷ 2):(width ÷ 2), nparticles)
+    v = sample(-(height ÷ 2):(height ÷ 2), nparticles)
+
+    particles[:, 1] = x
+    particles[:, 2] = y
+    particles[:, 3] = u
+    particles[:, 4] = v
+
+    weights = ones(nparticles) ./ nparticles
 
     return particles, weights
 
