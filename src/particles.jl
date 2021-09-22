@@ -66,7 +66,51 @@ function duplicateparticles!(particles::Matrix{Int64}, weights::Vector{Float64})
 
 end
 
+function moveparticles(particles::Matrix{Int64}, rest...)::Matrix{Int64}
+    newparticles = copy(particles)
+    moveparticles!(newparticles, rest...)
 
-function updateweights(weights,probabilities)
+    return newparticles
+end
+function moveparticles!(particles::Matrix{Int64}, Σ::Matrix{Float64}, framesize::Tuple{Int64, Int64})
+
+    width, height = framesize
+    N = size(particles, 1)
+    ν = rand(MvNormal(zeros(4), Σ), N)
+
+    x = particles[:, 1:2]
+    V = particles[:, 3:4]
+
+    x′ = x + V + ν[1:2, :]'
+    V′ = V + ν[3:4, :]'
+
+    particles[:, 1] = @. round(Int64, mod(x′[:, 1], width))
+    particles[:, 2] = @. round(Int64, mod(x′[:, 2], height))
+    
+    particles[:, 3:4] = @. round(Int64, V′)
+
+
+end
+
+
+"""
+Update particles and weights given the frames, a current time t, a covariance matrix of motion Σ, and an observation noise.
+"""
+function step!(particles, w, frames, t, Σ, σ²ᵢ)
+    frame = frames[t, :, :]
+    frame′ = frames[t + 1, :, :]
+
+    I = getparticlevalues(frame, particles)
+
+    moveparticles!(particles, Σ, size(frame))
+
+    I′ = getparticlevalues(frame′, particles)
+
+    p = pdf.(Normal(0, σ²ᵢ), I - I′)
+
+    w = normalize(w .* p)        
+
+    duplicateparticles!(particles, w)
+end
 
 end
