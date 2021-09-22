@@ -6,7 +6,7 @@ using Parameters
 
 using MAT, ImageFiltering
 using Images, Rotations, CoordinateTransformations
-using Base.Threads
+using Base.Threads, Base.Iterators
 
 using Printf
 using Plots, StatsPlots
