@@ -43,7 +43,7 @@ function framegeneratorfactory(tgfile)
 
     S = size(wedge, 1)
 
-    function framegenerator(speed::Float64, inducerduration::Int64, opacity::Float64; dynamic=false)
+    function framegenerator(speed::Float64, inducerduration::Int64, opacity::Float64; dynamic=false)::Vector{Frame}
 
         Δθ = deg2rad(speed)
         
@@ -66,7 +66,7 @@ function framegeneratorfactory(tgfile)
 
         @threads for noiseframe in inducerduration:T frames[noiseframe, :, :] = dynamic ? rand(S, S) : inducernoise end
 
-        return frames
+        return [Frame(frames[t, :, :]) for t ∈ 1:T]
 
     end 
 
