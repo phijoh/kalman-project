@@ -116,7 +116,25 @@ function step(particles, w, frames, t, Σ, σ²ᵢ)
 
 end
 
-    duplicateparticles!(particles, w)
+filterframes = copy(frames)
+for t in 1:T
+    filterframes[t, :, :] = imfilter(frames[t, :, :], Kernel.LoG(25)) |> normalize
 end
 
+v₀ = 10.
+
+Σ = [
+    1 0 0 0;
+    0 1 0 0;
+    0 0 v₀ 0;
+    0 0 0 v₀
+]
+
+T, width, height = size(frames)
+particles, weights = selectrandomparticles((width, height), 2^16)
+for t in 1:127
+    println("Iteration t = $t / 127")
+    global particles, weights = step(particles, weights, filterframes, t, Σ, σ²ᵢ)
 end
+
+plotparticles(particles, frames[127, :, :])
