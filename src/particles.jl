@@ -59,7 +59,8 @@ function moveparticles!(particles::Matrix{Int64}, Σ::Matrix{Float64}, framesize
 
     width, height = framesize
     N = size(particles, 1)
-    ν = rand(MvNormal(zeros(4), Σ), N)
+
+    ν = all(Σ .≈ 0) ? zeros(4, N) : rand(MvNormal(zeros(4), Σ), N)
 
     x = particles[:, 1:2]
     V = particles[:, 3:4]
@@ -67,14 +68,21 @@ function moveparticles!(particles::Matrix{Int64}, Σ::Matrix{Float64}, framesize
     x′ = x + V + ν[1:2, :]'
     V′ = V + ν[3:4, :]'
 
-    particles[:, 1] = @. round(Int64, mod(x′[:, 1], width))
-    particles[:, 2] = @. round(Int64, mod(x′[:, 2], height))
+    particles[:, 1] = torus.(x′[:, 1], width)
+    particles[:, 2] = torus.(x′[:, 2], height)
     
     particles[:, 3:4] = @. round(Int64, V′)
 
-
 end
 
+Σ₀ = zeros(4, 4)
+
+function likelihood(fr, fr′, particles, particles′, σ²ᵢ)
+    # Find likelihood of luminance
+    I = getparticlevalues(fr, particles)
+    I′ = getparticlevalues(fr′, particles′)
+    return pdf.(Normal(0, σ²ᵢ), @. (I - I′)^2)
+end
 
 """
 Update particles and weights given the frames, a current time t, a covariance matrix of motion Σ, and an observation noise.
