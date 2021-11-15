@@ -7,13 +7,13 @@ function selectrandomparticles(framesize, nparticles::Int64)
     x = sample(1:width, nparticles)
     y = sample(1:height, nparticles)
 
-    u = sample(-(width ÷ 2):(width ÷ 2), nparticles)
-    v = sample(-(height ÷ 2):(height ÷ 2), nparticles)
+    u = sample(-(width ÷ 100):(width ÷ 100), nparticles)
+    v = sample(-(height ÷ 100):(height ÷ 100), nparticles)
 
     particles[:, 1] = x
     particles[:, 2] = y
-    particles[:, 3] = u
-    particles[:, 4] = v
+    particles[:, 3] .= 0
+    particles[:, 4] .= 0
 
     weights = ones(nparticles) ./ nparticles
 
@@ -24,20 +24,21 @@ end
 """
 Get the luminance around (rfsize) the particles
 """
-function getparticlevalues(frame::Matrix{Float64}, particles::Matrix{Int64}; rfsize=10)
+function getparticlevalues(frame::Frame, particles::Matrix{Int64}; rfsize=2)
     
-    #TODO: smooth whole frame?
+    # TODO: smooth whole frame?
 
     width = size(frame, 1) # FIXME: What happens with height?
+    N = size(particles, 1)
 
-    particlevalues = zeros(size(particles,1))
+    particlevalues = zeros(N)
 
     for (i, particle) in eachrow(particles) |> enumerate
         (x, y, u, v) = particle
         x₀,y₀ = max.([x, y] .- (rfsize-1), 1)
         x₁,y₁ = min.([x, y] .+ (rfsize-1), width)
 
-        particlevalues[i] = mean(frame[x₀:x₁,y₀:y₁])
+        particlevalues[i] = mean(frame[x₀:x₁, y₀:y₁])
 
     end
 
@@ -77,64 +78,36 @@ end
 
 Σ₀ = zeros(4, 4)
 
-function likelihood(fr, fr′, particles, particles′, σ²ᵢ)
+function likelihood(fr::Frame, fr′::Frame, particles, nextparticles, σ²ᵢ)
     # Find likelihood of luminance
     I = getparticlevalues(fr, particles)
-    I′ = getparticlevalues(fr′, particles′)
-    return pdf.(Normal(0, σ²ᵢ), @. (I - I′)^2)
+    I′ = getparticlevalues(fr′, nextparticles)
+    return pdf.(Normal(0, σ²ᵢ), @. (I - I′))
 end
 
 """
 Update particles and weights given the frames, a current time t, a covariance matrix of motion Σ, and an observation noise.
 """
-function step(particles, w, frames, t, Σ, σ²ᵢ)
-    fr = frames[t, :, :]
-    fr′ = frames[t + 1, :, :]
+function step(particles, w, frames::Vector{Frame}, t, Σ, σ²ᵢ; trh = 0.5)
+    N = size(particles, 1)
 
-    # Compute theoretical particles
-    particlesᴱ = moveparticles(particles, Σ₀, size(fr))
-
-    p = likelihood(
-        fr, fr′, 
-        particles, particlesᴱ, σ²ᵢ)
-    
-    wᴱ = normalize(w .* p)
+    fr = frames[t]
+    fr′ = frames[t + 1]
 
     # Compute realized particles
     particles′ = moveparticles(particles, Σ, size(fr))
-    pₙ = likelihood(fr, fr′, particles, particles′, σ²ᵢ)
+    L = likelihood(fr, fr′, particles, particles′, σ²ᵢ)
 
-    wᴬ = normalize(w .* pₙ)        
+    wᴬ = normalize(w .* L)
+    wᴱ = mean(wᴬ) * trh
     
     # Replace worst performing particles with theoretical particles
     losers = wᴬ .< wᴱ
+    winners = sample((1:N)[.!losers], sum(losers))
 
-    particles′[losers, :] .= particlesᴱ[losers, :]
-    wᴬ[losers] = wᴱ[losers]
+    particles′[losers, :] .= particles′[winners, :]
+    wᴬ[losers] = wᴬ[winners]
 
     return particles′, normalize(wᴬ)
 
 end
-
-filterframes = copy(frames)
-for t in 1:T
-    filterframes[t, :, :] = imfilter(frames[t, :, :], Kernel.LoG(25)) |> normalize
-end
-
-v₀ = 10.
-
-Σ = [
-    1 0 0 0;
-    0 1 0 0;
-    0 0 v₀ 0;
-    0 0 0 v₀
-]
-
-T, width, height = size(frames)
-particles, weights = selectrandomparticles((width, height), 2^16)
-for t in 1:127
-    println("Iteration t = $t / 127")
-    global particles, weights = step(particles, weights, filterframes, t, Σ, σ²ᵢ)
-end
-
-plotparticles(particles, frames[127, :, :])
