@@ -19,7 +19,6 @@ include("src/loadenv.jl")
 # Utilities
 include("src/utilities/matrix.jl") 
 include("src/utilities/datautils.jl")
-
 # Data
 include("src/loadposition.jl")
 
@@ -35,7 +34,7 @@ include("src/diagnostic/mcextrapolate.jl")
 
 # Plots
 include("src/plots/extrapolations.jl")
-include("src/plots/plotparticles.jl")
+include("src/plots/particles.jl")
 
 Random.seed!(seed)
 

@@ -97,7 +97,7 @@ function step(particles, w, frames, t, Σ, σ²ᵢ)
     p = likelihood(
         fr, fr′, 
         particles, particlesᴱ, σ²ᵢ)
-
+    
     wᴱ = normalize(w .* p)
 
     # Compute realized particles
