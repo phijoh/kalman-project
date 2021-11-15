@@ -24,7 +24,7 @@ end
 """
 Get the luminance around (rfsize) the particles
 """
-function getparticlevalues(frame::Matrix{Float64}, particles::Matrix{Int64}; rfsize=2)
+function getparticlevalues(frame::Matrix{Float64}, particles::Matrix{Int64}; rfsize=10)
     
     #TODO: smooth whole frame?
 
@@ -45,25 +45,8 @@ function getparticlevalues(frame::Matrix{Float64}, particles::Matrix{Int64}; rfs
 
 end
 
-"""
-Drop particles with low weight and substitute with high weight particles
-"""
-function duplicateparticles!(particles::Matrix{Int64}, weights::Vector{Float64})
-
-    N = size(particles, 1)
-
-    threshold = mean(weights)
-    discardedparticleidx = weights .< threshold
-
-    bestparticles = particles[.!discardedparticleidx,:]
-
-    for i in (1:N)[discardedparticleidx]
-        
-        duplicate = sample(1:size(bestparticles,1))
-        particles[i,:] = bestparticles[duplicate,:]
-    
-    end
-
+function torus(x, w)
+    mod(round(Int64, x) - 1, w) + 1
 end
 
 function moveparticles(particles::Matrix{Int64}, rest...)::Matrix{Int64}
