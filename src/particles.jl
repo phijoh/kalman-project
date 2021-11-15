@@ -87,19 +87,34 @@ end
 """
 Update particles and weights given the frames, a current time t, a covariance matrix of motion Σ, and an observation noise.
 """
-function step!(particles, w, frames, t, Σ, σ²ᵢ)
-    frame = frames[t, :, :]
-    frame′ = frames[t + 1, :, :]
+function step(particles, w, frames, t, Σ, σ²ᵢ)
+    fr = frames[t, :, :]
+    fr′ = frames[t + 1, :, :]
 
-    I = getparticlevalues(frame, particles)
+    # Compute theoretical particles
+    particlesᴱ = moveparticles(particles, Σ₀, size(fr))
 
-    moveparticles!(particles, Σ, size(frame))
+    p = likelihood(
+        fr, fr′, 
+        particles, particlesᴱ, σ²ᵢ)
 
-    I′ = getparticlevalues(frame′, particles)
+    wᴱ = normalize(w .* p)
 
-    p = pdf.(Normal(0, σ²ᵢ), I - I′)
+    # Compute realized particles
+    particles′ = moveparticles(particles, Σ, size(fr))
+    pₙ = likelihood(fr, fr′, particles, particles′, σ²ᵢ)
 
-    w = normalize(w .* p)        
+    wᴬ = normalize(w .* pₙ)        
+    
+    # Replace worst performing particles with theoretical particles
+    losers = wᴬ .< wᴱ
+
+    particles′[losers, :] .= particlesᴱ[losers, :]
+    wᴬ[losers] = wᴱ[losers]
+
+    return particles′, normalize(wᴬ)
+
+end
 
     duplicateparticles!(particles, w)
 end
