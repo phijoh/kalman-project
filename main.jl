@@ -26,7 +26,6 @@ include("src/frame.jl")
 include("src/loadposition.jl")
 
 # Estimation
-include("src/filtering.jl")
 include("src/estimate.jl")
 include("src/particles.jl")
 
