@@ -10,7 +10,7 @@
     
 end
 
-function stepwiseparticle(T, N, frames; dimensions = 4, verbose = false, L = 500)
+function stepwiseparticle(T, N, frames; dimensions = 4, verbose = false, L = 100, sampler = NUTS(0.65))
 
     width, height = size(first(frames))
 
@@ -41,9 +41,9 @@ function stepwiseparticle(T, N, frames; dimensions = 4, verbose = false, L = 500
 
         # Estimate the posterior Σ using the winning particles
         notlosers = .~losers
-        model = movement(particles[notlosers, :], prevparticles[notlosers, :], Σ)
+        model = movement(particles[notlosers, :], particlesovertime[t-1, notlosers, :], Σ)
 
-        chain = sample(model, NUTS(0.65), L)
+        chain = sample(model, sampler, L)
 
         # Make posterior new prior
         μₛ = zeros(dimensions)
