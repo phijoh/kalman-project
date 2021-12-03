@@ -107,7 +107,8 @@ function step(particles, w, frames::Vector{Frame}, t, Σ, σ²ᵢ; trh = 0.5)
 
     particles′[losers, :] .= particles′[winners, :]
     wᴬ[losers] = wᴬ[winners]
-
-    return particles′, normalize(wᴬ)
+    
+    # FIXME: Find nicer way to return losers
+    return particles′, normalize(wᴬ), losers
 
 end
