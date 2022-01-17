@@ -1,12 +1,24 @@
-function plotparticles(particles::Matrix{Int64}, fr::Matrix{Float64})
+function plotparticledensity(particles::Matrix{Int64}, weights::Vector{Float64}, fr::Frame; rfsize = 2)
 
-    particle_density = zeros(Int64, size(fr))
+    width = size(fr, 1)
+    N = size(particles, 1)
 
-    for (x, y, _, _) in eachrow(particles)
-        particle_density[x, y] += 1
+    particle_density = zeros(Float64, size(fr))
+
+    for i in 1:N
+        x, y = particles[i, 1:2]
+
+        x₀,y₀ = max.([x, y] .- (rfsize-1), 1)
+        x₁,y₁ = min.([x, y] .+ (rfsize-1), width)
+
+        particle_density[x₀:x₁, y₀:y₁] .+= weights[i]
     end
 
-    figure = heatmap(particle_density, size = (400, 400), legend = nothing, aspect_ratio = 1)
+    figure = contourf(
+        particle_density; 
+        size = (400, 400), legend = nothing, aspect_ratio = 1,
+        xlabel = L"x", ylabel = L"y", c = :Blues
+    )
 
     return figure
 
@@ -31,4 +43,25 @@ function plotexpectedposition(particles, weights, fr)
     scatter!(fig, [x], [y], label = nothing, color = :red)
 
     return fig
+end
+
+function plotvariance(particlesovertime, weightsovertime, duration; kwargs...)
+    T = size(weightsovertime, 1)
+    σ = Matrix{Float64}(undef, T, 2)
+
+    for t in 1:T
+        p = particlesovertime[t, :, 1:2]
+        w = StatsBase.weights(weightsovertime[t, :])
+
+        σ[t, 1] = var(p[:, 1], w)
+        σ[t, 2] = var(p[:, 2], w)
+    end
+
+    varfig = plot(xlabel = L"t", ylabel = L"\sigma^2"; legend = :bottomleft, kwargs...)
+    plot!(varfig, 1:T, σ[:, 1]; label = L"\sigma^2_x")
+    plot!(varfig, 1:T, σ[:, 2]; label = L"\sigma^2_y")
+    vline!(varfig, [duration]; linestyle = :dash, c = :black, label = "Disappearance")
+
+
+    return varfig
 end
