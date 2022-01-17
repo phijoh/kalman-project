@@ -10,9 +10,10 @@
     
 end
 
-function stepwiseparticle(T, N, frames; dimensions = 4, verbose = false, L = 100, sampler = NUTS(0.65))
+function stepwiseparticle(T, N, frames; dimensions = 4, verbose = false, L = 500, sampler = NUTS(0.65))
 
     width, height = size(first(frames))
+    σ²ᵢ = mean(var.(frames))
 
     chains = []
 
