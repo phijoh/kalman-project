@@ -20,6 +20,7 @@ include("src/loadenv.jl")
 include("src/utilities/matrix.jl") 
 include("src/utilities/datautils.jl")
 include("src/utilities/distributions.jl")
+include("src/utilities/particles.jl")
 
 # Data
 include("src/frame.jl")
@@ -40,7 +41,7 @@ include("src/plots/particles.jl")
 
 Random.seed!(seed)
 
-function run(datapath, T, speed, duration, opacity; dynamic=false, plotpath=plotpath, N=2^12, verbose = false, kwargs...)
+function run(datapath, T, speed, duration; opacity = 1., dynamic=true, plotpath=plotpath, N=2^12, verbose = false, kwargs...)
 
     verbose && println("Generating frames...")
 
@@ -57,23 +58,32 @@ function run(datapath, T, speed, duration, opacity; dynamic=false, plotpath=plot
 
 end
 
-duration = 32
-T = duration + 16
-opacity = 1.
-dynamic = true
+duration = 32 # Estimation frames 
+overshoot = 16 # Overshoot frames
+T = duration + overshoot # Total time
 
-for speed ∈ [0.9, 1., 1.1]
+speeds = [0.4, 0.6, 0.8, 1., 1.2]
+S = length(speeds)
+dimensions = 4
+N = 2^12
+
+results = Dict(
+    :particles => Array{Float64}(undef, S, T, N, 4),
+    :weights => Array{Float64}(undef, S, T, N),
+    :speeds => speeds
+)
+
+for (s, speed) in enumerate(speeds)
 
     particlesovertime, weightsovertime, chains, frames = run(
-        datapath, T, speed, duration, opacity; 
-        L = 100,
-        dynamic = dynamic, verbose = true)
+        datapath, T, speed, duration; 
+        L = 100, N = N,
+        dynamic = dynamic, verbose = verbose
+    )
 
-    title = "Speed = $speed"
-
-    fig = plotvariance(particlesovertime, weightsovertime, duration; title = title, dpi = 250)
-
-    intspeed = replace(speed |> string, '.' => '_')
-    savefig("figures/varplot_$(intspeed).png")
-
+    results[:particles][s, :, :, :] = particlesovertime
+    results[:weights][s, :, :] = weightsovertime
 end
+
+fig = plotvariance(results, duration; dpi = 250)
+savefig("figures/varplot_comparison.png")
