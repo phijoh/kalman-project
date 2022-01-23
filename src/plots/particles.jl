@@ -45,23 +45,46 @@ function plotexpectedposition(particles, weights, fr)
     return fig
 end
 
-function plotvariance(particlesovertime, weightsovertime, duration; kwargs...)
-    T = size(weightsovertime, 1)
-    σ = Matrix{Float64}(undef, T, 2)
+function plotvariance(results, duration; kwargs...)
+    S, T, _, _ = size(results[:particles])
 
-    for t in 1:T
-        p = particlesovertime[t, :, 1:2]
-        w = StatsBase.weights(weightsovertime[t, :])
+    σ = Matrix{Float64}(undef, T, S) # FIXME: We only use after duration anyway
+    θ = Matrix{Float64}(undef, T, S)
 
-        σ[t, 1] = var(p[:, 1], w)
-        σ[t, 2] = var(p[:, 2], w)
+    for s in 1:S
+
+        particlesovertime = @view results[:particles][s, :, :, :]
+        weightsovertime = @view results[:weights][s, :, :]
+
+        θ₀ = getexpectedvalue(
+            results[:particles][s, duration, :, :],
+            results[:weights][s, duration, :]
+        )
+
+        for t in 1:T
+            p = particlesovertime[t, :, 1:2]
+            θₜ = xytoangle.(eachrow(p)) .* (180 / π)
+            w = StatsBase.weights(weightsovertime[t, :])
+
+            θ[t, s] = θ₀ - θₜ'w
+            σ[t, s] = std(θₜ, w) 
+        end
     end
 
-    varfig = plot(xlabel = L"t", ylabel = L"\sigma^2"; legend = :bottomleft, kwargs...)
-    plot!(varfig, 1:T, σ[:, 1]; label = L"\sigma^2_x")
-    plot!(varfig, 1:T, σ[:, 2]; label = L"\sigma^2_y")
-    vline!(varfig, [duration]; linestyle = :dash, c = :black, label = "Disappearance")
+    varfig = plot(
+        xlabel = L"t", ylabel = L"\theta"; 
+        legend = :bottomleft, kwargs...)
 
+    plott = 20:T
+    
+    for s in 1:S
+        plot!(
+            varfig, plott, θ[plott, s];
+            ribbon = σ[plott, s], fillalpha = 0.2,
+            label = "speed = $(results[:speeds][s])")
+    end
+    
+    # vline!(varfig, [duration]; linestyle = :dash, c = :black, label = "Disappearance")
 
     return varfig
 end
