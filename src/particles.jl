@@ -56,6 +56,7 @@ function moveparticles(particles::Matrix{Int64}, rest...)::Matrix{Int64}
 
     return newparticles
 end
+
 function moveparticles!(particles::Matrix{Int64}, Σ::Matrix{Float64}, framesize::Tuple{Int64, Int64})
 
     width, height = framesize
