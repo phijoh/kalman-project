@@ -61,11 +61,13 @@ end
 duration = 32 # Estimation frames 
 overshoot = 16 # Overshoot frames
 T = duration + overshoot # Total time
+τ = 1 # Neural delay in frames (60ms) TODO: implement this.
 
 speeds = [0.4, 0.6, 0.8, 1., 1.2]
 S = length(speeds)
 dimensions = 4
 N = 2^12
+dynamic = false
 
 results = Dict(
     :particles => Array{Float64}(undef, S, T, N, 4),
@@ -86,4 +88,4 @@ for (s, speed) in enumerate(speeds)
 end
 
 fig = plotvariance(results, duration; dpi = 250)
-savefig("figures/varplot_comparison.png")
+savefig("plots/varplot_comparison.png")
