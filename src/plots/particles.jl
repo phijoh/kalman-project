@@ -45,6 +45,17 @@ function plotexpectedposition(particles, weights, fr)
     return fig
 end
 
+function getexpectedvalue(p, w)
+
+    x = mean(p[:, 1], StatsBase.weights(w))
+    y = mean(p[:, 2], StatsBase.weights(w))
+
+    θ = xytoangle([x y])
+
+    return θ
+end
+
+
 function plotvariance(results, duration; kwargs...)
     S, T, _, _ = size(results[:particles])
 
@@ -83,7 +94,9 @@ function plotvariance(results, duration; kwargs...)
             ribbon = σ[plott, s], fillalpha = 0.2,
             label = "speed = $(results[:speeds][s])")
     end
-    
+
+    vline!(varfig, [duration], linecolor = :black, linestyle = :dot,
+    label = "wedge duration")    
     # vline!(varfig, [duration]; linestyle = :dash, c = :black, label = "Disappearance")
 
     return varfig
