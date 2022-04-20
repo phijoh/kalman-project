@@ -63,20 +63,20 @@ overshoot = 16 # Overshoot frames
 T = duration + overshoot # Total time
 τ = 1 # Neural delay in frames (60ms) TODO: implement this.
 
-speeds = [0.4] #, 0.6, 0.8, 1., 1.2]
-S = length(speeds)
+specifications = [(0.8, 1., false),(0.8, 1., true)] # speed, opacity, dynamic noise present
+S = length(specifications)
 dimensions = 4
 N = 2^12
-dynamic = true
-opacity = 0.5
 
 results = Dict(
     :particles => Array{Float64}(undef, S, T, N, 4),
     :weights => Array{Float64}(undef, S, T, N),
-    :speeds => speeds
+    :specs => specifications
 )
 
-for (s, speed) in enumerate(speeds)
+for (s, specs) in enumerate(specifications)
+
+    speed, opacity, dynamic = specs
 
     particlesovertime, weightsovertime, chains, frames = run(
         datapath, T, speed, duration; 
@@ -88,8 +88,4 @@ for (s, speed) in enumerate(speeds)
     results[:weights][s, :, :] = weightsovertime
 end
 
-scatterparticles(particlesovertime[T, :, :], frames[T])
-
-
-fig = plotvariance(results, duration; dpi = 250)
-savefig("plots/varplot_comparison.png")
+plotprecision(results, duration; dpi = 250)
