@@ -601,3 +601,4 @@ TSWLatexianTemp*
 notes/*.pdf
 data/input
 figures/
+*.zip
