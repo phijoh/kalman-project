@@ -56,7 +56,7 @@ function getexpectedvalue(p, w)
 end
 
 
-function plotvariance(results, duration; kwargs...)
+function plotangle(results, duration; kwargs...)
     S, T, _, _ = size(results[:particles])
 
     σ = Matrix{Float64}(undef, T, S) # FIXME: We only use after duration anyway
@@ -86,7 +86,7 @@ function plotvariance(results, duration; kwargs...)
         xlabel = L"t", ylabel = L"\theta"; 
         legend = :bottomleft, kwargs...)
 
-    plott = 20:T
+    plott = 1:T
     
     for s in 1:S
         plot!(
@@ -100,4 +100,46 @@ function plotvariance(results, duration; kwargs...)
     # vline!(varfig, [duration]; linestyle = :dash, c = :black, label = "Disappearance")
 
     return varfig
+end
+
+
+
+function plotprecision(results, duration; kwargs...)
+
+    S, T, _, _ = size(results[:particles])
+
+    σ = Matrix{Float64}(undef, T, S) # FIXME: We only use after duration anyway
+
+    for s in 1:S
+
+        particlesovertime = @view results[:particles][s, :, :, :]
+        weightsovertime = @view results[:weights][s, :, :]
+
+        for t in 1:T
+            p = particlesovertime[t, :, 1:2]
+            θₜ = xytoangle.(eachrow(p)) .* (180 / π)
+            w = StatsBase.weights(weightsovertime[t, :])
+
+            σ[t, s] = var(p[:,1], w) + var(p[:,2], w)
+        end
+    end
+
+    varfig = plot(
+        xlabel = L"t", ylabel = L"(\sigma_{x}^2 + \sigma_{y}^2)^{-1}"; 
+        legend = :outerright, kwargs...)
+
+    plott = 1:T
+    
+    for s in 1:S
+        plot!(
+            varfig, plott, 1 ./σ[plott, s];
+            label = "specification $s")
+    end
+
+    vline!(varfig, [duration-1], linecolor = :black, linestyle = :dot,
+    label = "stimulus duration")    
+    # vline!(varfig, [duration]; linestyle = :dash, c = :black, label = "Disappearance")
+
+    return varfig
+
 end
