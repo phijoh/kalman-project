@@ -24,7 +24,7 @@ end
 """
 Get the luminance around (rfsize) the particles
 """
-function getparticlevalues(frame::Frame, particles::Matrix{Int64}; rfsize=2)
+function getparticlevalues(frame::Frame, particles::Matrix{Int64}; rfsize=1)
     
     # TODO: smooth whole frame?
 
