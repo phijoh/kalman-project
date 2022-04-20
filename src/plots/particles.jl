@@ -50,7 +50,7 @@ function getexpectedvalue(p, w)
     x = mean(p[:, 1], StatsBase.weights(w))
     y = mean(p[:, 2], StatsBase.weights(w))
 
-    θ = xytoangle([x y])
+    θ = xytoangle([x y]) .* (180 / π)
 
     return θ
 end
