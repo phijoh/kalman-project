@@ -92,26 +92,30 @@ for (s, specs) in enumerate(specifications)
     results[:weights][s, :, :] = weightsovertime
 end
 
-precfig = plotprecision(results, duration; dpi=250)
-savefig(precfig, joinpath(plotpath, "precision.png"))
+if shallplot
 
-angleplot = plotangle(results, duration; after=5, dpi=250, labels=["static", "dynamic"], marker=:o, legend=:topleft)
-savefig(angleplot, joinpath(plotpath, "extrapolation.png"))
+    precfig = plotprecision(results, duration; dpi=250)
+    savefig(precfig, joinpath(plotpath, "precision.png"))
+
+    angleplot = plotangle(results, duration; after=5, dpi=250, labels=["static", "dynamic"], marker=:o, legend=:topleft)
+    savefig(angleplot, joinpath(plotpath, "extrapolation.png"))
 
 
 
-for (s, specs) ∈ enumerate(specifications)
-    speed, opacity, dynamic = specs
-    specname = replace(join(specs, "-"), "." => "_")
+    for (s, specs) ∈ enumerate(specifications)
+        speed, opacity, dynamic = specs
+        specname = replace(join(specs, "-"), "." => "_")
 
-    # Gif of first specification
-    frames = results[:frames][s]
-    particlesovertime = results[:particles][s, :, :, :]
-    weightsovertime = results[:weights][s, :, :]
+        # Gif of first specification
+        frames = results[:frames][s]
+        particlesovertime = results[:particles][s, :, :, :]
+        weightsovertime = results[:weights][s, :, :]
 
-    anim = @animate for t ∈ 1:T
-        plotexpectedposition(particlesovertime[t, :, :], weightsovertime[t, :], frames[t])
+        anim = @animate for t ∈ 1:T
+            plotexpectedposition(particlesovertime[t, :, :], weightsovertime[t, :], frames[t])
+        end
+
+        gif(anim, joinpath(plotpath, "estpos-$specname.gif"), fps=15)
     end
 
-    gif(anim, joinpath(plotpath, "estpos-$specname.gif"), fps=15)
 end
