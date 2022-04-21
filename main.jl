@@ -89,3 +89,4 @@ for (s, specs) in enumerate(specifications)
 end
 
 plotprecision(results, duration; dpi = 250)
+savefig("figures/precision_plot.png")
