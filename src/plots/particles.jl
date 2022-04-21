@@ -61,11 +61,12 @@ function plotexpectedposition(particles, weights, fr; kwargs...)
     return fig
 end
 
-function plotangle(results, duration; kwargs...)
-    S, T, _, _ = size(results[:particles])
+function plotangle(results, duration; before=20, after=10, labels=nothing, kwargs...)
+    S = size(results[:particles], 1)
 
-    σ = Matrix{Float64}(undef, T, S) # FIXME: We only use after duration anyway
-    θ = Matrix{Float64}(undef, T, S)
+    window = (duration-before):(duration+after)
+    θ = Matrix{Float64}(undef, length(window), S)
+
 
     for s in 1:S
 
@@ -73,35 +74,30 @@ function plotangle(results, duration; kwargs...)
         weightsovertime = @view results[:weights][s, :, :]
 
         θ₀ = getexpectedangle(
-            results[:particles][s, duration, :, :],
-            results[:weights][s, duration, :]
+            results[:particles][s, duration-1, :, :],
+            results[:weights][s, duration-1, :]
         )
 
-        for t in 1:T
+        for (i, t) in enumerate(window)
             p = particlesovertime[t, :, 1:2]
-            θₜ = xytoangle.(eachrow(p)) .* (180 / π)
-            w = StatsBase.weights(weightsovertime[t, :])
+            θₜ = xytoangle.(eachrow(p))
+            w = weightsovertime[t, :]
 
-            θ[t, s] = θ₀ - θₜ'w
-            σ[t, s] = std(θₜ, w)
+            θ[i, s] = θ₀ - θₜ'w
         end
     end
 
     varfig = plot(
-        xlabel=L"t", ylabel=L"\theta";
+        xlabel=L"t", ylabel=L"\theta_T - \theta_t";
         legend=:bottomleft, kwargs...)
 
-    plott = 1:T
 
     for s in 1:S
-        plot!(
-            varfig, plott, θ[plott, s];
-            ribbon=σ[plott, s], fillalpha=0.2,
-            label="speed = $(results[:speeds][s])")
+        label = !isnothing(labels) ? labels[s] : "specification $s"
+        plot!(varfig, window, θ[:, s]; label=label, kwargs...)
     end
 
-    vline!(varfig, [duration], linecolor=:black, linestyle=:dot,
-        label="wedge duration")
+    vline!(varfig, [duration - 1], linecolor=:black, linestyle=:dot, label=nothing)
     # vline!(varfig, [duration]; linestyle = :dash, c = :black, label = "Disappearance")
 
     return varfig

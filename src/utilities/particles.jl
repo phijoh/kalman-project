@@ -22,7 +22,6 @@ end
 function getexpectedangle(p::Matrix{Int64}, w::Vector{Float64})
 
     x, y = getexpectedposition(p, w)
-    θ = xytoangle([x y]) .* (180 / π)
-
+    θ = xytoangle([x y])
     return θ
 end

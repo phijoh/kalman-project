@@ -59,7 +59,11 @@ rfsize = 1
 T = duration + overshoot # Total time
 τ = 1 # Neural delay in frames (60ms) TODO: implement this.
 
-specifications = [(0.8, 1.0, false), (0.8, 1.0, true)] # speed, opacity, dynamic noise present
+specifications = [
+    (1.2, 1.0, false),
+    (1.2, 1.0, true)
+] # speed, opacity, dynamic noise present
+
 S = length(specifications)
 dimensions = 4
 N = 2^12
@@ -88,9 +92,18 @@ for (s, specs) in enumerate(specifications)
     results[:weights][s, :, :] = weightsovertime
 end
 
-# plotprecision(results, duration; dpi=250)
+precfig = plotprecision(results, duration; dpi=250)
+savefig(precfig, joinpath(plotpath, "precision.png"))
 
-for s ∈ 1:length(specifications)
+angleplot = plotangle(results, duration; after=5, dpi=250, labels=["static", "dynamic"], marker=:o, legend=:topleft)
+savefig(angleplot, joinpath(plotpath, "extrapolation.png"))
+
+
+
+for (s, specs) ∈ enumerate(specifications)
+    speed, opacity, dynamic = specs
+    specname = replace(join(specs, "-"), "." => "_")
+
     # Gif of first specification
     frames = results[:frames][s]
     particlesovertime = results[:particles][s, :, :, :]
@@ -100,5 +113,5 @@ for s ∈ 1:length(specifications)
         plotexpectedposition(particlesovertime[t, :, :], weightsovertime[t, :], frames[t])
     end
 
-    gif(anim, joinpath(plotpath, "estpos-$s.gif"), fps=15)
+    gif(anim, joinpath(plotpath, "estpos-$specname.gif"), fps=15)
 end
