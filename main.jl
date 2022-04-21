@@ -1,8 +1,6 @@
 using JLD
 using LinearAlgebra
 using Random, Distributions, StatsBase
-using Turing, ParticleFilters
-using Parameters
 
 using MAT, ImageFiltering
 using Images, Rotations, CoordinateTransformations
@@ -17,7 +15,7 @@ include("src/utilities/env.jl")
 include("src/loadenv.jl")
 
 # Utilities
-include("src/utilities/matrix.jl") 
+include("src/utilities/matrix.jl")
 include("src/utilities/datautils.jl")
 include("src/utilities/distributions.jl")
 include("src/utilities/particles.jl")
@@ -31,9 +29,6 @@ include("src/estimate.jl")
 include("src/particles.jl")
 
 # Diagnostic
-include("src/diagnostic/chain.jl")
-include("src/diagnostic/extrapolate.jl")
-include("src/diagnostic/mcextrapolate.jl")
 
 # Plots
 include("src/plots/extrapolations.jl")
@@ -41,7 +36,7 @@ include("src/plots/particles.jl")
 
 Random.seed!(seed)
 
-function run(datapath, T, speed, duration; opacity = 1., dynamic=true, plotpath=plotpath, N=2^12, verbose = false, kwargs...)
+function runestimation(datapath, T, speed, duration; opacity=1.0, dynamic=true, N=2^12, verbose=false, rfsize=1)
 
     verbose && println("Generating frames...")
 
@@ -50,43 +45,60 @@ function run(datapath, T, speed, duration; opacity = 1., dynamic=true, plotpath=
 
     verbose && println("...estimating position...")
 
-    particlesovertime, weightsovertime, chains = stepwiseparticle(T, N, frames; verbose = verbose, kwargs...)
+    particlesovertime, weightsovertime = stepwiseparticle(T, N, frames; verbose=verbose, rfsize=rfsize)
 
     verbose && println("...done!")
 
-    return particlesovertime, weightsovertime, chains, frames
+    return particlesovertime, weightsovertime, frames
 
 end
 
-duration = 32 # Estimation frames 
-overshoot = 16 # Overshoot frames
+duration = 48 # Estimation frames 
+overshoot = 32 # Overshoot frames
+rfsize = 1
 T = duration + overshoot # Total time
 τ = 1 # Neural delay in frames (60ms) TODO: implement this.
 
-specifications = [(0.8, 1., false),(0.8, 1., true)] # speed, opacity, dynamic noise present
+specifications = [(0.8, 1.0, false), (0.8, 1.0, true)] # speed, opacity, dynamic noise present
 S = length(specifications)
 dimensions = 4
 N = 2^12
 
 results = Dict(
-    :particles => Array{Float64}(undef, S, T, N, 4),
+    :particles => Array{Int64}(undef, S, T, N, dimensions),
     :weights => Array{Float64}(undef, S, T, N),
-    :specs => specifications
+    :frames => Array{Frame}[],
+    :specs => specifications,
 )
 
 for (s, specs) in enumerate(specifications)
 
     speed, opacity, dynamic = specs
 
-    particlesovertime, weightsovertime, chains, frames = run(
-        datapath, T, speed, duration; 
-        opacity = opacity, L = 100, N = N,
-        dynamic = dynamic, verbose = verbose
+    particlesovertime, weightsovertime, frames = runestimation(
+        datapath, T, speed, duration;
+        opacity=opacity, N=N,
+        dynamic=dynamic, verbose=verbose,
+        rfsize=rfsize
     )
+
+    push!(results[:frames], frames)
 
     results[:particles][s, :, :, :] = particlesovertime
     results[:weights][s, :, :] = weightsovertime
 end
 
-plotprecision(results, duration; dpi = 250)
-savefig("figures/precision_plot.png")
+# plotprecision(results, duration; dpi=250)
+
+for s ∈ 1:length(specifications)
+    # Gif of first specification
+    frames = results[:frames][s]
+    particlesovertime = results[:particles][s, :, :, :]
+    weightsovertime = results[:weights][s, :, :]
+
+    anim = @animate for t ∈ 1:T
+        plotexpectedposition(particlesovertime[t, :, :], weightsovertime[t, :], frames[t])
+    end
+
+    gif(anim, joinpath(plotpath, "estpos-$s.gif"), fps=15)
+end
