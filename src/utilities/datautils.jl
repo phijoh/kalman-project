@@ -39,23 +39,25 @@ Make constructor for frames from TG_test.mat
 function framegeneratorfactory(tgfile)
     
     wedge = tgfile["stimMask"]
-    flashduration = convert(Int64, tgfile["flashDur"])
 
     S = size(wedge, 1)
 
-    function framegenerator(speed::Float64, inducerduration::Int64, opacity::Float64; dynamic=false)::Vector{Frame}
+    function framegenerator(inducerduration::Int64, noiseduration::Int64, speed::Float64, opacity::Float64; dynamic=false)::Vector{Frame}
 
-        Δθ = deg2rad(speed)
+        Δθ = deg2rad(speed / mstoframes(1))
         
         currentwedge = opacity * copy(wedge)
         inducernoise = rand(S, S)
         alphablend(frame) = @. frame + inducernoise * (1 - frame) 
 
-        T = inducerduration + flashduration
+        inducerframes = mstoframes(inducerduration)
+        noiseframes = mstoframes(noiseduration)
+
+        T = inducerframes + noiseframes
         frames = zeros(T, S, S)
         frames[1, :, :] = alphablend(currentwedge)
         
-        for inducerframe in 2:inducerduration 
+        for inducerframe in 2:inducerframes 
 
             currentwedge = imrotate(currentwedge, Δθ, axes(currentwedge))
             replace!(currentwedge, NaN => 0.)
@@ -64,7 +66,7 @@ function framegeneratorfactory(tgfile)
 
         end
 
-        @threads for noiseframe in inducerduration:T frames[noiseframe, :, :] = dynamic ? rand(S, S) : inducernoise end
+        @threads for noiseframe in inducerframes:T frames[noiseframe, :, :] = dynamic ? rand(S, S) : inducernoise end
 
         return [Frame(frames[t, :, :]) for t ∈ 1:T]
 
@@ -72,4 +74,9 @@ function framegeneratorfactory(tgfile)
 
     return framegenerator
 
+end
+
+
+function mstoframes(ms)
+    ceil(Int64, ms * framespersecond/1000)
 end

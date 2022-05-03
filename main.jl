@@ -36,15 +36,16 @@ include("src/plots/particles.jl")
 
 Random.seed!(seed)
 
-function runestimation(datapath, T, speed, duration; opacity=1.0, dynamic=true, N=2^12, verbose=false, rfsize=1)
+function runestimation(datapath, inducerduration, noiseduration; speed=.016, opacity=1.0, dynamic=true, N=2^12, verbose=false, rfsize=1)
 
     verbose && println("Generating frames...")
 
     makeframes = loadgeneratedframe(datapath)
-    frames = makeframes(speed, duration, opacity; dynamic=dynamic)
+    frames = makeframes(inducerduration, noiseduration, speed, opacity; dynamic=dynamic)
 
     verbose && println("...estimating position...")
 
+    T = length(frames)
     particlesovertime, weightsovertime = stepwiseparticle(T, N, frames; verbose=verbose, rfsize=rfsize)
 
     verbose && println("...done!")
@@ -53,15 +54,15 @@ function runestimation(datapath, T, speed, duration; opacity=1.0, dynamic=true, 
 
 end
 
-duration = 48 # Estimation frames 
-overshoot = 32 # Overshoot frames
+inducerduration = 640 # Estimation ms 
+noiseduration = 100 # Overshoot ms
+T = mstoframes(duration + overshoot) # Total time
+τ = 100 # Neural delay in ms, TODO: implement this.
 rfsize = 1
-T = duration + overshoot # Total time
-τ = 1 # Neural delay in frames (60ms) TODO: implement this.
 
 specifications = [
-    (1.2, 1.0, false),
-    (1.2, 1.0, true)
+    (.16, 1.0, false),
+    (.16, 1.0, true)
 ] # speed, opacity, dynamic noise present
 
 S = length(specifications)
@@ -80,10 +81,10 @@ for (s, specs) in enumerate(specifications)
     speed, opacity, dynamic = specs
 
     particlesovertime, weightsovertime, frames = runestimation(
-        datapath, T, speed, duration;
-        opacity=opacity, N=N,
-        dynamic=dynamic, verbose=verbose,
-        rfsize=rfsize
+        datapath, inducerduration, noiseduration;
+        speed, opacity, N,
+        dynamic, verbose,
+        rfsize
     )
 
     push!(results[:frames], frames)
