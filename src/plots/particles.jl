@@ -133,7 +133,7 @@ function plotprecision(results, duration; kwargs...)
         plot!(
             varfig, plott, 1 ./ σ[plott, s];
             label="speed = $results[:specs][s][1], 
-          opacity =  $results[:specs][s][2],
+          opacity = $results[:specs][s][2],
           dynamic = $results[:specs][s][3]")
     end
 
