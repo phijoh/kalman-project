@@ -15,14 +15,14 @@ function stepwiseparticle(T, N, frames; dimensions=4, verbose=false, rfsize)
     # Initialize prior
     Σ = diagm(ones(dimensions))
 
-    for t in 2:T
-        verbose && print("Iteration t = $t / $T\r")
+    for tᵈ in 2:T
+        verbose && print("Iteration tᵈ = $tᵈ / $(T-τ)\r")
 
         # One particle step with a random sample from the prior
 
         particles, weights = particlestep(
-            particlesovertime[t-1, :, :], weightsovertime[t-1, :],
-            frames[t-1], frames[t];
+            particlesovertime[tᵈ-1, :, :], weightsovertime[tᵈ-1, :],
+            frames[tᵈ-1], frames[tᵈ];
             Σ, σ²ᵢ, rfsize=rfsize
         )
 
@@ -31,8 +31,8 @@ function stepwiseparticle(T, N, frames; dimensions=4, verbose=false, rfsize)
         Σ .= getvariance(particles, weights)
 
         # Save particles and chain
-        particlesovertime[t, :, :] = particles
-        weightsovertime[t, :] = weights
+        particlesovertime[tᵈ, :, :] = particles
+        weightsovertime[tᵈ, :] = weights
     end
 
     return particlesovertime, weightsovertime
