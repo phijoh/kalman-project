@@ -27,8 +27,7 @@ include("src/loadposition.jl")
 # Estimation
 include("src/estimate.jl")
 include("src/particles.jl")
-
-# Diagnostic
+include("src/compensate.jl")
 
 # Plots
 include("src/plots/extrapolations.jl")
@@ -36,7 +35,7 @@ include("src/plots/particles.jl")
 
 Random.seed!(seed)
 
-function runestimation(datapath, inducerduration, noiseduration; speed=.016, opacity=1.0, dynamic=true, N=2^12, verbose=false, rfsize=1)
+function runestimation(datapath, inducerduration, noiseduration; τ, speed=0.016, opacity=1.0, dynamic=true, N=2^12, verbose=false, rfsize=1)
 
     verbose && println("Generating frames...")
 
@@ -46,11 +45,28 @@ function runestimation(datapath, inducerduration, noiseduration; speed=.016, opa
     verbose && println("...estimating position...")
 
     T = length(frames)
-    particlesovertime, weightsovertime = stepwiseparticle(T, N, frames; verbose=verbose, rfsize=rfsize)
+    particlesovertime, weightsovertime = stepwiseparticle(T - τ, N, frames; verbose=verbose, rfsize=rfsize)
+
+    dims = size(particlesovertime, 3)
+    framesize = size(last(frames))
+
+    compensatedparticles = Array{Int64}(undef, T + τ, N, dims)
+    compensatedparticles[1, :, :] .= particlesovertime[1, :, :]
+
+    for t ∈ 2:τ
+        compensatedparticles[t, :, :] .= moveparticles(compensatedparticles[t-1, :, :], zeros(dims, dims), framesize)
+    end
+
+    for tᵈ ∈ 1:(T-τ)
+        compensatedparticles[tᵈ+τ, :, :] = compensate(
+            particlesovertime[tᵈ, :, :],
+            τ, framesize
+        )
+    end
 
     verbose && println("...done!")
 
-    return particlesovertime, weightsovertime, frames
+    return compensatedparticles, weightsovertime, frames
 
 end
 
@@ -61,8 +77,8 @@ T = mstoframes(duration + overshoot) # Total time
 rfsize = 1
 
 specifications = [
-    (.16, 1.0, false),
-    (.16, 1.0, true)
+    (0.16, 1.0, false),
+    (0.16, 1.0, true)
 ] # speed, opacity, dynamic noise present
 
 S = length(specifications)
@@ -82,8 +98,8 @@ for (s, specs) in enumerate(specifications)
 
     particlesovertime, weightsovertime, frames = runestimation(
         datapath, inducerduration, noiseduration;
-        speed, opacity, N,
-        dynamic, verbose,
+        τ, speed, opacity,
+        N, dynamic, verbose,
         rfsize
     )
 
