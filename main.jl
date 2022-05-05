@@ -35,7 +35,7 @@ include("src/plots/particles.jl")
 
 Random.seed!(seed)
 
-function runestimation(datapath, inducerduration, noiseduration; τ, speed=0.016, opacity=1.0, dynamic=true, N=2^12, verbose=false, rfsize=1)
+function runestimation(datapath, inducerduration, noiseduration; τ, speed, opacity, dynamic, N, verbose=false, rfsize=1, dimensions=4)
 
     verbose && println("Generating frames...")
 
@@ -45,45 +45,41 @@ function runestimation(datapath, inducerduration, noiseduration; τ, speed=0.016
     verbose && println("...estimating position...")
 
     T = length(frames)
-    particlesovertime, weightsovertime = stepwiseparticle(T - τ, N, frames; verbose=verbose, rfsize=rfsize)
+    particlesovertime, weightsovertime = estimateparticle(
+        T - τ, N, frames; 
+        dimensions, verbose=verbose, rfsize=rfsize
+    )
 
-    dims = size(particlesovertime, 3)
-    framesize = size(last(frames))
-
-    compensatedparticles = Array{Int64}(undef, T + τ, N, dims)
-    compensatedparticles[1, :, :] .= particlesovertime[1, :, :]
-
-    for t ∈ 2:τ
-        compensatedparticles[t, :, :] .= moveparticles(compensatedparticles[t-1, :, :], zeros(dims, dims), framesize)
-    end
-
-    for tᵈ ∈ 1:(T-τ)
-        compensatedparticles[tᵈ+τ, :, :] = compensate(
-            particlesovertime[tᵈ, :, :],
-            τ, framesize
-        )
-    end
+    verbose && println("..compensating for neural delay τ...")
+    compensated, compweights = sequencecompensation(
+        particlesovertime, weightsovertime,
+        τ, size(last(frames))
+    )
 
     verbose && println("...done!")
 
-    return compensatedparticles, weightsovertime, frames
+    return compensated, compweights, frames
 
 end
 
 inducerduration = 640 # Estimation ms 
 noiseduration = 100 # Overshoot ms
-T = mstoframes(duration + overshoot) # Total time
-τ = 100 # Neural delay in ms, TODO: implement this.
+
+Tᵢ = mstoframes(inducerduration)
+Tₙ = mstoframes(noiseduration)
+
+T = Tᵢ + Tₙ # Total time
+τ = mstoframes(100) # Neural delay in ms, TODO: implement this.
 rfsize = 1
 
 specifications = [
-    (0.16, 1.0, false),
-    (0.16, 1.0, true)
-] # speed, opacity, dynamic noise present
+    (0.16, 1.0, false, mstoframes(100))
+    # (0.16, 1.0, true)
+] # speed, opacity, dynamic noise, τ
 
 S = length(specifications)
 dimensions = 4
-N = 2^12
+N = 2^15
 
 results = Dict(
     :particles => Array{Int64}(undef, S, T, N, dimensions),
@@ -94,9 +90,9 @@ results = Dict(
 
 for (s, specs) in enumerate(specifications)
 
-    speed, opacity, dynamic = specs
+    speed, opacity, dynamic, τ = specs
 
-    particlesovertime, weightsovertime, frames = runestimation(
+    compensatedparticles, weightsovertime, frames = runestimation(
         datapath, inducerduration, noiseduration;
         τ, speed, opacity,
         N, dynamic, verbose,
@@ -105,22 +101,22 @@ for (s, specs) in enumerate(specifications)
 
     push!(results[:frames], frames)
 
-    results[:particles][s, :, :, :] = particlesovertime
+    results[:particles][s, :, :, :] = compensatedparticles
     results[:weights][s, :, :] = weightsovertime
 end
 
-if shallplot
 
-    precfig = plotprecision(results, duration; dpi=250)
+
+if shallplot
+    precfig = plotprecision(results, Tᵢ)
     savefig(precfig, joinpath(plotpath, "precision.png"))
 
-    angleplot = plotangle(results, duration; after=5, dpi=250, labels=["static", "dynamic"], marker=:o, legend=:topleft)
+    angleplot = plotangle(results, Tᵢ; after=5, labels=["no delay", "short delay", "delay"], marker=:o, legend=:topleft)
     savefig(angleplot, joinpath(plotpath, "extrapolation.png"))
 
 
-
     for (s, specs) ∈ enumerate(specifications)
-        speed, opacity, dynamic = specs
+        speed, opacity, dynamic, τ = specs
         specname = replace(join(specs, "-"), "." => "_")
 
         # Gif of first specification
@@ -128,8 +124,11 @@ if shallplot
         particlesovertime = results[:particles][s, :, :, :]
         weightsovertime = results[:weights][s, :, :]
 
-        anim = @animate for t ∈ 1:T
-            plotexpectedposition(particlesovertime[t, :, :], weightsovertime[t, :], frames[t])
+        anim = @animate for t ∈ 1:T            
+            particles = particlesovertime[t, :, :]
+            weights = weightsovertime[t, :]
+
+            plotexpectedposition(particles, weights, frames[t])
         end
 
         gif(anim, joinpath(plotpath, "estpos-$specname.gif"), fps=15)

@@ -116,7 +116,7 @@ function plotprecision(results, duration; kwargs...)
 
         for t in 1:T
             p = particlesovertime[t, :, 1:2]
-            θₜ = xytoangle.(eachrow(p)) .* (180 / π)
+            # θₜ = xytoangle.(eachrow(p)) .* (180 / π)
             w = StatsBase.weights(weightsovertime[t, :])
 
             σ[t, s] = var(p[:, 1], w) + var(p[:, 2], w)
@@ -130,11 +130,10 @@ function plotprecision(results, duration; kwargs...)
     plott = 1:T
 
     for s in 1:S
-        plot!(
-            varfig, plott, 1 ./ σ[plott, s];
-            label="speed = $results[:specs][s][1], 
-          opacity = $results[:specs][s][2],
-          dynamic = $results[:specs][s][3]")
+        precision = 1 ./ σ[plott, s]
+
+        plot!(varfig, plott, precision; label = s)
+      
     end
 
     vline!(varfig, [duration - 1], linecolor=:black, linestyle=:dot,

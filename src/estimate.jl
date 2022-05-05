@@ -1,4 +1,4 @@
-function stepwiseparticle(T, N, frames; dimensions=4, verbose=false, rfsize)
+function estimateparticle(T, N, frames; dimensions=4, verbose=false, rfsize)
 
     width, height = size(first(frames))
     σ²ᵢ = mean(var.(frames))
@@ -16,7 +16,7 @@ function stepwiseparticle(T, N, frames; dimensions=4, verbose=false, rfsize)
     Σ = diagm(ones(dimensions))
 
     for tᵈ in 2:T
-        verbose && print("Iteration tᵈ = $tᵈ / $(T-τ)\r")
+        verbose && print("Iteration tᵈ = $tᵈ / $T \r")
 
         # One particle step with a random sample from the prior
 
