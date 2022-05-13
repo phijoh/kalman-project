@@ -35,7 +35,7 @@ include("src/plots/particles.jl")
 
 Random.seed!(seed)
 
-function runestimation(inducerduration, noiseduration; τ, speed, opacity, dynamic, N, verbose=false, rfsize=1, dimensions=4)
+function runestimation(inducerduration, noiseduration; τ, speed, opacity, dynamic, N, verbose=false, rfsize=1, dimensions=4, trh=0.5)
 
     verbose && println("Generating frames...")
 
@@ -46,7 +46,7 @@ function runestimation(inducerduration, noiseduration; τ, speed, opacity, dynam
     T = length(frames)
     particlesovertime, weightsovertime = estimateparticle(
         T - τ, N, frames;
-        dimensions, verbose=verbose, rfsize=rfsize
+        dimensions, verbose, rfsize, trh
     )
 
     verbose && println("..compensating for neural delay τ...")
@@ -80,6 +80,7 @@ specifications = [
 S = length(specifications)
 dimensions = 4
 N = 2^15
+trh = 0.9
 
 results = Dict(
     :particles => Array{Int64}(undef, S, T, N, dimensions),
@@ -96,7 +97,7 @@ for (s, specs) in enumerate(specifications)
         inducerduration, noiseduration;
         τ, speed, opacity,
         N, dynamic, verbose,
-        rfsize
+        rfsize, trh=trh
     )
 
     push!(results[:frames], frames)

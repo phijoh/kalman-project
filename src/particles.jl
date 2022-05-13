@@ -81,20 +81,20 @@ end
 
 function likelihood(fr::Frame, fr′::Frame, particles, nextparticles, σ²ᵢ; rfsize)
     # Find likelihood of luminance
-    I = getparticlevalues(fr, particles; rfsize=rfsize)
-    I′ = getparticlevalues(fr′, nextparticles; rfsize=rfsize)
+    I = getparticlevalues(fr, particles; rfsize)
+    I′ = getparticlevalues(fr′, nextparticles; rfsize)
     return pdf.(Normal(0, σ²ᵢ), @. (I - I′))
 end
 
 """
 Update particles and weights given the current frame and the next frame, a covariance matrix of motion Σ, and the luminance noise.
 """
-function particlestep(particles, w, fr::Frame, fr′::Frame; Σ, σ²ᵢ, trh=0.5, rfsize=1)
+function particlestep(particles, w, fr::Frame, fr′::Frame; Σ, σ²ᵢ, trh, rfsize)
     N = size(particles, 1)
 
     # Compute realized particles
     particles′ = moveparticles(particles, Σ, size(fr))
-    L = likelihood(fr, fr′, particles, particles′, σ²ᵢ, rfsize=rfsize)
+    L = likelihood(fr, fr′, particles, particles′, σ²ᵢ; rfsize)
 
     wᴬ = normalize(w .* L)
     wᴱ = mean(wᴬ) * trh

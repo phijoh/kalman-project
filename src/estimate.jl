@@ -1,4 +1,4 @@
-function estimateparticle(T, N, frames; dimensions=4, verbose=false, rfsize)
+function estimateparticle(T, N, frames; dimensions=4, verbose=false, trh, rfsize)
 
     width, height = size(first(frames))
     σ²ᵢ = mean(var.(frames))
@@ -23,7 +23,7 @@ function estimateparticle(T, N, frames; dimensions=4, verbose=false, rfsize)
         particles, weights = particlestep(
             particlesovertime[tᵈ-1, :, :], weightsovertime[tᵈ-1, :],
             frames[tᵈ-1], frames[tᵈ];
-            Σ, σ²ᵢ, rfsize
+            Σ, σ²ᵢ, rfsize, trh
         )
 
         # TODO: Use maximum likelihood estimation
