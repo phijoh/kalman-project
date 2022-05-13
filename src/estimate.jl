@@ -6,10 +6,10 @@ function estimateparticle(T, N, frames; dimensions=4, verbose=false, rfsize)
     # Initialize weights and particles
     particles₀, weights₀ = selectrandomparticles((width, height), N)
 
-    weightsovertime = zeros(T, N)
+    weightsovertime = Array{Float64}(undef, T, N)
     weightsovertime[1, :] = weights₀
 
-    particlesovertime = zeros(Int64, T, N, dimensions)
+    particlesovertime = Array{Int64}(undef, T, N, dimensions)
     particlesovertime[1, :, :] = particles₀
 
     # Initialize prior
@@ -23,7 +23,7 @@ function estimateparticle(T, N, frames; dimensions=4, verbose=false, rfsize)
         particles, weights = particlestep(
             particlesovertime[tᵈ-1, :, :], weightsovertime[tᵈ-1, :],
             frames[tᵈ-1], frames[tᵈ];
-            Σ, σ²ᵢ, rfsize=rfsize
+            Σ, σ²ᵢ, rfsize
         )
 
         # TODO: Use maximum likelihood estimation
