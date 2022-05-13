@@ -35,18 +35,17 @@ include("src/plots/particles.jl")
 
 Random.seed!(seed)
 
-function runestimation(datapath, inducerduration, noiseduration; τ, speed, opacity, dynamic, N, verbose=false, rfsize=1, dimensions=4)
+function runestimation(inducerduration, noiseduration; τ, speed, opacity, dynamic, N, verbose=false, rfsize=1, dimensions=4)
 
     verbose && println("Generating frames...")
 
-    makeframes = loadgeneratedframe(datapath)
     frames = makeframes(inducerduration, noiseduration, speed, opacity; dynamic=dynamic)
 
     verbose && println("...estimating position...")
 
     T = length(frames)
     particlesovertime, weightsovertime = estimateparticle(
-        T - τ, N, frames; 
+        T - τ, N, frames;
         dimensions, verbose=verbose, rfsize=rfsize
     )
 
@@ -67,14 +66,15 @@ noiseduration = 100 # Overshoot ms
 
 Tᵢ = mstoframes(inducerduration)
 Tₙ = mstoframes(noiseduration)
+makeframes = loadgeneratedframe(datapath)
 
 T = Tᵢ + Tₙ # Total time
-τ = mstoframes(100) # Neural delay in ms, TODO: implement this.
+τₘ = mstoframes(100) # Neural delay in ms, TODO: implement this.
 rfsize = 1
 
 specifications = [
-    (0.16, 1.0, false, mstoframes(100))
-    # (0.16, 1.0, true)
+    (0.16, 1.0, false, τₘ)
+# (0.16, 1.0, true)
 ] # speed, opacity, dynamic noise, τ
 
 S = length(specifications)
@@ -93,7 +93,7 @@ for (s, specs) in enumerate(specifications)
     speed, opacity, dynamic, τ = specs
 
     compensatedparticles, weightsovertime, frames = runestimation(
-        datapath, inducerduration, noiseduration;
+        inducerduration, noiseduration;
         τ, speed, opacity,
         N, dynamic, verbose,
         rfsize
@@ -124,7 +124,7 @@ if shallplot
         particlesovertime = results[:particles][s, :, :, :]
         weightsovertime = results[:weights][s, :, :]
 
-        anim = @animate for t ∈ 1:T            
+        anim = @animate for t ∈ 1:T
             particles = particlesovertime[t, :, :]
             weights = weightsovertime[t, :]
 
