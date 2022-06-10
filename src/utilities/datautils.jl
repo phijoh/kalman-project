@@ -50,8 +50,8 @@ function framegeneratorfactory(tgfile)
         inducernoise = rand(S, S)
         alphablend(frame) = @. frame + inducernoise * (1 - frame) 
 
-        inducerframes = mstoframes(inducerduration)
-        noiseframes = mstoframes(noiseduration)
+        inducerframes = ceil(Int64, mstoframes(inducerduration))
+        noiseframes = ceil(Int64, mstoframes(noiseduration))
 
         T = inducerframes + noiseframes
         frames = zeros(T, S, S)
@@ -78,5 +78,5 @@ end
 
 
 function mstoframes(ms)
-    ceil(Int64, ms * framespersecond/1000)
+    ms * framespersecond / 1000
 end

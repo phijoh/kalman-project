@@ -64,12 +64,12 @@ end
 inducerduration = 640 # Estimation ms 
 noiseduration = 100 # Overshoot ms
 
-Tᵢ = mstoframes(inducerduration)
-Tₙ = mstoframes(noiseduration)
+Tᵢ = ceil(Int64, mstoframes(inducerduration))
+Tₙ = ceil(Int64, mstoframes(noiseduration))
 makeframes = loadgeneratedframe(datapath)
 
 T = Tᵢ + Tₙ # Total time
-τₘ = mstoframes(100) # Neural delay in ms, TODO: implement this.
+τₘ = ceil(Int64, mstoframes(100)) # Neural delay in ms, TODO: implement this.
 rfsize = 1
 
 specifications = [
