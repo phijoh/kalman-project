@@ -1,7 +1,8 @@
 function compensate(particles::Matrix{Int64}, τ::Int64, framesize::NTuple{2, Int64})
 
     compensatedparticles = copy(particles)
-    dims = size(particles,2)
+    dims = size(particles, 2)
+
     for _ in 1:τ
         moveparticles!(compensatedparticles, zeros(dims,dims), framesize)
     end

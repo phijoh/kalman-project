@@ -1,4 +1,5 @@
 
+
 function selectrandomparticles(framesize, nparticles::Int64)
 
     width, height = framesize
@@ -7,8 +8,8 @@ function selectrandomparticles(framesize, nparticles::Int64)
     x = sample(1:width, nparticles)
     y = sample(1:height, nparticles)
 
-    u = sample(-(width ÷ 100):(width÷100), nparticles)
-    v = sample(-(height ÷ 100):(height÷100), nparticles)
+    u = integernormal(nparticles, width ÷ 2)
+    v = integernormal(nparticles, height ÷ 2)
 
     particles[:, 1] = x
     particles[:, 2] = y

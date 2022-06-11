@@ -1,4 +1,9 @@
-xytoangle(coord) = atan(coord[2] / coord[1])
+function computeangle(x, y)
+    θ = atan(y, x)
+    θ < 0 ? π + abs(θ) : θ
+end
+xytoangle(coord) = computeangle(coord[1], coord[2])
+uvtoangle(coord) = computeangle(coord[3], coord[4])
 
 function getexpectedposition(p::Matrix{Int64}, w::Vector{Float64})
 
@@ -20,8 +25,17 @@ function getvariance(p::Matrix{Int64}, w::Vector{Float64})
 end
 
 function getexpectedangle(p::Matrix{Int64}, w::Vector{Float64})
+    getexpectedposition(p, w) |> xytoangle
+end
 
-    x, y = getexpectedposition(p, w)
-    θ = xytoangle([x y])
-    return θ
+
+function getcoherencevelocity(particles, weights)
+    angles = map(uvtoangle, eachrow(particles))
+    return mean(angles, StatsBase.weights(weights))
+end
+
+function integernormal(N::Int64, upper::Int64)
+    dist = Binomial(upper * 2, 0.5)
+
+    return rand(dist, N) .- upper
 end
