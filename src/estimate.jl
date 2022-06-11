@@ -13,7 +13,7 @@ function estimateparticle(T, N, frames; dimensions=4, verbose=false, trh, rfsize
     particlesovertime[1, :, :] = particles₀
 
     # Initialize prior
-    Σ = diagm(ones(dimensions))
+    Σ = getvariance(particles₀, weights₀)
 
     for tᵈ in 2:T
         verbose && print("Iteration tᵈ = $tᵈ / $T \r")
@@ -21,7 +21,8 @@ function estimateparticle(T, N, frames; dimensions=4, verbose=false, trh, rfsize
         # One particle step with a random sample from the prior
 
         particles, weights = particlestep(
-            particlesovertime[tᵈ-1, :, :], weightsovertime[tᵈ-1, :],
+            particlesovertime[tᵈ-1, :, :], 
+            weightsovertime[tᵈ-1, :],
             frames[tᵈ-1], frames[tᵈ];
             Σ, σ²ᵢ, rfsize, trh
         )
