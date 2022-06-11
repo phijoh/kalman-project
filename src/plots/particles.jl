@@ -24,11 +24,15 @@ function plotparticledensity(particles::Matrix{Int64}, weights::Vector{Float64},
 
 end
 
-function scatterparticles(particles, fr)
+function scatterparticles(particles, fr; weights = nothing, kwargs...)
+    N = size(particles, 1)
     S = size(fr, 1)
-    fig = heatmap(fr; aspect_ratio=1, xlims=(0, S), ylims=(0, S), color=:greys)
 
-    scatter!(fig, particles[:, 2], particles[:, 1], label=nothing, color=:white)
+    alphas = isnothing(weights) ? ones(N) : weights ./ 2maximum(weights)
+
+    fig = heatmap(fr; aspect_ratio=1, xlims=(0, S), ylims=(0, S), color=:greys, kwargs...)
+
+    scatter!(fig, particles[:, 2], particles[:, 1], label=nothing, color=:darkred, alpha = alphas)
 
     return fig
 end
