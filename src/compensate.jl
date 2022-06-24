@@ -39,8 +39,8 @@ function sequencecompensation(
 
     # After that there the tₑ particle is used to extrapolate to tₑ + τ
     for tₑ ∈ 1:Tₑ
-        print("Compensating tₑ = $(tₑ + τ) / $(Tₑ + τ) \r")
-        verbose && print()
+        verbose && print("Compensating tₑ = $(tₑ + τ) / $(Tₑ + τ) \r")
+
         compensated[tₑ+τ, :, :] = compensate(
             particlesovertime[tₑ, :, :],
             τ, framesize
