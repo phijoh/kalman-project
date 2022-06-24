@@ -52,7 +52,8 @@ function runestimation(inducerduration, noiseduration; τ, speed, opacity, dynam
     verbose && println("..compensating for neural delay τ...")
     compensated, compweights = sequencecompensation(
         particlesovertime, weightsovertime,
-        τ, size(last(frames))
+        τ, size(last(frames));
+        verbose
     )
 
     verbose && println("...done!")
@@ -120,7 +121,6 @@ if shallplot
         speed, opacity, dynamic, τ = specs
         specname = replace(join(specs, "-"), "." => "_")
 
-        # Gif of first specification
         frames = results[:frames][s]
         particlesovertime = results[:particles][s, :, :, :]
         weightsovertime = results[:weights][s, :, :]
@@ -129,7 +129,7 @@ if shallplot
             particles = particlesovertime[t, :, :]
             weights = weightsovertime[t, :]
 
-            plotexpectedposition(particles, weights, frames[t])
+            plotexpectedposition(particles, weights, frames[t]; title=latexstring("\$ t = $(t - τ) \$"))
         end
 
         gif(anim, joinpath(plotpath, "estpos-$specname.gif"), fps=15)
