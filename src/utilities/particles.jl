@@ -37,5 +37,5 @@ end
 function integernormal(N::Int64, upper::Int64)
     dist = Binomial(upper * 2, 0.5)
 
-    return rand(dist, N) .- upper
+    return (rand(dist, N) .- upper) .÷ 2
 end

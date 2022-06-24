@@ -1,10 +1,9 @@
-function estimateparticle(T, N, frames; dimensions=4, verbose=false, trh, rfsize)
+function estimateparticle(T, N, frames; dimensions=4, verbose=false, intensity, rfsize)
 
-    width, height = size(first(frames))
     σ²ᵢ = mean(var.(frames))
 
     # Initialize weights and particles
-    particles₀, weights₀ = selectrandomparticles((width, height), N)
+    particles₀, weights₀ = selectrandomparticles(size(first(frames)), N)
 
     weightsovertime = Array{Float64}(undef, T, N)
     weightsovertime[1, :] = weights₀
@@ -19,15 +18,14 @@ function estimateparticle(T, N, frames; dimensions=4, verbose=false, trh, rfsize
         verbose && print("Iteration tᵈ = $tᵈ / $T \r")
 
         # One particle step with a random sample from the prior
+        particles = particlesovertime[tᵈ-1, :, :]
+        w = weightsovertime[tᵈ-1, :]
+        fr, fr′ = frames[tᵈ-1], frames[tᵈ]
 
         particles, weights = particlestep(
-            particlesovertime[tᵈ-1, :, :], 
-            weightsovertime[tᵈ-1, :],
-            frames[tᵈ-1], frames[tᵈ];
-            Σ, σ²ᵢ, rfsize, trh
+            particles, w, fr, fr′;
+            Σ, σ²ᵢ, rfsize, intensity
         )
-
-        # TODO: Use maximum likelihood estimation
 
         Σ .= getvariance(particles, weights)
 
@@ -38,3 +36,4 @@ function estimateparticle(T, N, frames; dimensions=4, verbose=false, trh, rfsize
 
     return particlesovertime, weightsovertime
 end
+
