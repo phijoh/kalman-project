@@ -24,7 +24,7 @@ function plotparticledensity(particles::Matrix{Int64}, weights::Vector{Float64},
 
 end
 
-function scatterparticles(particles, fr; weights = nothing, kwargs...)
+function scatterparticles(particles, fr; weights=nothing, kwargs...)
     N = size(particles, 1)
     S = size(fr, 1)
 
@@ -32,7 +32,7 @@ function scatterparticles(particles, fr; weights = nothing, kwargs...)
 
     fig = heatmap(fr; aspect_ratio=1, xlims=(0, S), ylims=(0, S), color=:greys, kwargs...)
 
-    scatter!(fig, particles[:, 2], particles[:, 1], label=nothing, color=:darkred, alpha = alphas)
+    scatter!(fig, particles[:, 2], particles[:, 1], label=nothing, color=:darkred, alpha=alphas)
 
     return fig
 end
@@ -42,8 +42,7 @@ function plotexpectedposition(particles, weights, fr; kwargs...)
     x, y = getexpectedposition(particles, weights)
     Σ = getvariance(particles, weights)
 
-    Σₓ = sqrt.(Σ[1:2, 1:2])
-    N = MvNormal([x, y], Σₓ)
+    N = MvNormal([x, y], Σ[1:2, 1:2])
     pdfN(x, y) = pdf(N, [x, y])
 
     xs = ys = 0:1:S
@@ -53,6 +52,13 @@ function plotexpectedposition(particles, weights, fr; kwargs...)
         c=:grays, aspect_ratio=1,
         colorbar=false,
         xlims=ylims = (1, S), kwargs...
+    )
+
+    scatter!(
+        fig,
+        [x], [y];
+        markersize = 2, markerstrokewidth = 0,
+        label=nothing, c=:darkred
     )
 
     contour!(
@@ -136,8 +142,8 @@ function plotprecision(results, duration; kwargs...)
     for s in 1:S
         precision = 1 ./ σ[plott, s]
 
-        plot!(varfig, plott, precision; label = s)
-      
+        plot!(varfig, plott, precision; label=s)
+
     end
 
     vline!(varfig, [duration - 1], linecolor=:black, linestyle=:dot,
