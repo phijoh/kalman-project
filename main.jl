@@ -35,7 +35,7 @@ include("src/plots/particles.jl")
 
 Random.seed!(seed)
 
-function runestimation(inducerduration, noiseduration; τ, speed, opacity, dynamic, N, verbose=false, rfsize=1, dimensions=4, trh=0.5)
+function runestimation(inducerduration, noiseduration; τ, speed, opacity, dynamic, N, verbose=false, rfsize=1, dimensions=4, intensity=0.5)
 
     verbose && println("Generating frames...")
 
@@ -46,7 +46,7 @@ function runestimation(inducerduration, noiseduration; τ, speed, opacity, dynam
     T = length(frames)
     particlesovertime, weightsovertime = estimateparticle(
         T - τ, N, frames;
-        dimensions, verbose, rfsize, trh
+        dimensions, verbose, rfsize, intensity
     )
 
     verbose && println("..compensating for neural delay τ...")
@@ -70,18 +70,19 @@ Tₙ = ceil(Int64, mstoframes(noiseduration))
 makeframes = loadgeneratedframe(datapath)
 
 T = Tᵢ + Tₙ # Total time
-τₘ = ceil(Int64, mstoframes(100)) # Neural delay in ms, TODO: implement this.
+τₘ(ms) = ceil(Int64, mstoframes(ms)) # Neural delay in ms, TODO: implement this.
 rfsize = 1
 
 specifications = [
-    (0.16, 1.0, false, τₘ)
-# (0.16, 1.0, true)
+# (0.16, 1.0, false, 0), # No delay benchmark
+# (0.16, 1.0, false, τₘ(50)),
+    (0.16, 1.0, false, τₘ(100))
 ] # speed, opacity, dynamic noise, τ
 
 S = length(specifications)
 dimensions = 4
 N = 2^15
-trh = 0.9
+intensity = 3 / 4  # the quantile used for cutoff
 
 results = Dict(
     :particles => Array{Int64}(undef, S, T, N, dimensions),
@@ -98,7 +99,7 @@ for (s, specs) in enumerate(specifications)
         inducerduration, noiseduration;
         τ, speed, opacity,
         N, dynamic, verbose,
-        rfsize, trh=trh
+        rfsize, intensity
     )
 
     push!(results[:frames], frames)
@@ -110,14 +111,18 @@ end
 
 
 if shallplot
+    verbose && println("Plotting...")
+
     precfig = plotprecision(results, Tᵢ)
     savefig(precfig, joinpath(plotpath, "precision.png"))
 
-    angleplot = plotangle(results, Tᵢ; after=5, labels=["no delay", "short delay", "delay"], marker=:o, legend=:topleft)
-    savefig(angleplot, joinpath(plotpath, "extrapolation.png"))
+    # angleplot = plotangle(results, Tᵢ; after=5, labels=["no delay", "short delay", "delay"], marker=:o, legend=:topleft)
+    # savefig(angleplot, joinpath(plotpath, "extrapolation.png"))
 
 
     for (s, specs) ∈ enumerate(specifications)
+        verbose && println("Making gif for specification $(s) / $(length(specifications))...")
+
         speed, opacity, dynamic, τ = specs
         specname = replace(join(specs, "-"), "." => "_")
 
