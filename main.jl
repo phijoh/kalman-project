@@ -63,7 +63,7 @@ function runestimation(inducerduration, noiseduration; τ, speed, opacity, dynam
 end
 
 inducerduration = 640 # Estimation ms 
-noiseduration = 100 # Overshoot ms
+noiseduration = 200 # Overshoot ms
 
 Tᵢ = ceil(Int64, mstoframes(inducerduration))
 Tₙ = ceil(Int64, mstoframes(noiseduration))
@@ -73,16 +73,17 @@ T = Tᵢ + Tₙ # Total time
 τₘ(ms) = ceil(Int64, mstoframes(ms)) # Neural delay in ms, TODO: implement this.
 rfsize = 1
 
-specifications = [
-# (0.16, 1.0, false, 0), # No delay benchmark
-# (0.16, 1.0, false, τₘ(50)),
-    (0.16, 1.0, false, τₘ(100))
-] # speed, opacity, dynamic noise, τ
+specifications = product(
+    [0.08, 0.16], # Speeds
+    [1.0], # Opacity
+    [false, true], # Dynamic noise
+    [τₘ(60)] # Neural delay
+)
 
 S = length(specifications)
 dimensions = 4
-N = 2^15
-intensity = 3 / 4  # the quantile used for cutoff
+N = 2^16
+intensity = 0.95  # the quantile used for cutoff
 
 results = Dict(
     :particles => Array{Int64}(undef, S, T, N, dimensions),
@@ -116,11 +117,8 @@ if shallplot
     precfig = plotprecision(results, Tᵢ)
     savefig(precfig, joinpath(plotpath, "precision.png"))
 
-    # angleplot = plotangle(results, Tᵢ; after=5, labels=["no delay", "short delay", "delay"], marker=:o, legend=:topleft)
-    # savefig(angleplot, joinpath(plotpath, "extrapolation.png"))
-
-
     for (s, specs) ∈ enumerate(specifications)
+
         verbose && println("Making gif for specification $(s) / $(length(specifications))...")
 
         speed, opacity, dynamic, τ = specs

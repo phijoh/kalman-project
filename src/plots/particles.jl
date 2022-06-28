@@ -40,7 +40,7 @@ end
 function plotexpectedposition(particles, weights, fr; kwargs...)
     S = size(fr, 1)
     x, y = getexpectedposition(particles, weights)
-    Σ = getvariance(particles, weights)
+    Σ = sqrt.(getvariance(particles, weights))
 
     N = MvNormal([x, y], Σ[1:2, 1:2])
     pdfN(x, y) = pdf(N, [x, y])
@@ -57,7 +57,7 @@ function plotexpectedposition(particles, weights, fr; kwargs...)
     scatter!(
         fig,
         [x], [y];
-        markersize = 2, markerstrokewidth = 0,
+        markersize=2, markerstrokewidth=0,
         label=nothing, c=:darkred
     )
 
@@ -129,7 +129,7 @@ function plotprecision(results, duration; kwargs...)
             # θₜ = xytoangle.(eachrow(p)) .* (180 / π)
             w = StatsBase.weights(weightsovertime[t, :])
 
-            σ[t, s] = var(p[:, 1], w) + var(p[:, 2], w)
+            σ[t, s] = 1 / (var(p[:, 1], w) + var(p[:, 2], w))
         end
     end
 
