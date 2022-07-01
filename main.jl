@@ -15,6 +15,7 @@ include("src/utilities/env.jl")
 include("src/loadenv.jl")
 
 # Utilities
+include("src/utilities/algos.jl")
 include("src/utilities/matrix.jl")
 include("src/utilities/datautils.jl")
 include("src/utilities/distributions.jl")
@@ -62,8 +63,8 @@ function runestimation(inducerduration, noiseduration; τ, speed, opacity, dynam
 
 end
 
-inducerduration = 640 # Estimation ms 
-noiseduration = 200 # Overshoot ms
+inducerduration = 900 # Estimation ms 
+noiseduration = 400 # Overshoot ms
 
 Tᵢ = ceil(Int64, mstoframes(inducerduration))
 Tₙ = ceil(Int64, mstoframes(noiseduration))
@@ -74,11 +75,17 @@ T = Tᵢ + Tₙ # Total time
 rfsize = 1
 
 specifications = product(
-    [0.08, 0.16], # Speeds
-    [1.0], # Opacity
-    [false, true], # Dynamic noise
-    [τₘ(60)] # Neural delay
-)
+                     [0.16], # Speeds
+                     [1.0], # Opacity
+                     [false, true], # Dynamic noise
+                     [τₘ(60)] # Neural delay
+                 ) |> collect |> vec # Necessary to preserve order
+
+specifications = [
+    (0.16, 1, false, 0),
+    (0.16, 1, false, τₘ(60)),
+    (0.16, 1, true, τₘ(60)),
+]
 
 S = length(specifications)
 dimensions = 4
@@ -109,13 +116,16 @@ for (s, specs) in enumerate(specifications)
     results[:weights][s, :, :] = weightsovertime
 end
 
+verbose && println("Plotting...")
+precfig = plotprecision(results, Tᵢ; dpi=180)
+savefig(precfig, joinpath(plotpath, "precision.png"))
+
+anglefig = plotangle(results, Tᵢ; dpi=180)
+savefig(anglefig, joinpath(plotpath, "angle.png"))
 
 
 if shallplot
-    verbose && println("Plotting...")
 
-    precfig = plotprecision(results, Tᵢ)
-    savefig(precfig, joinpath(plotpath, "precision.png"))
 
     for (s, specs) ∈ enumerate(specifications)
 
