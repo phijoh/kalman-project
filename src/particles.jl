@@ -2,14 +2,14 @@
 
 function selectrandomparticles(framesize, nparticles::Int64)
 
-    width, height = framesize
+    w, h = framesize
 
     particles = zeros(Int64, nparticles, 4)
-    x = sample(1:width, nparticles)
-    y = sample(1:height, nparticles)
+    x = sample(1:w, nparticles)
+    y = sample(1:h, nparticles)
 
-    u = integernormal(nparticles, width ÷ 2)
-    v = integernormal(nparticles, height ÷ 2)
+    u = integernormal(nparticles, w ÷ 2)
+    v = integernormal(nparticles, h ÷ 2)
 
     particles[:, 1] = x
     particles[:, 2] = y
@@ -32,10 +32,10 @@ function getparticlevalues(frame::Frame, particles::Matrix{Int64}; rfsize=1)
     width = size(frame, 1) # FIXME: What happens with height?
     N = size(particles, 1)
 
-    particlevalues = zeros(N)
+    particlevalues = Vector{Float64}(undef, N)
 
     for (i, particle) in eachrow(particles) |> enumerate
-        (x, y, u, v) = particle
+        x, y = particle[1:2]
         x₀, y₀ = max.([x, y] .- (rfsize - 1), 1)
         x₁, y₁ = min.([x, y] .+ (rfsize - 1), width)
 
@@ -57,7 +57,6 @@ function moveparticles(particles::Matrix{Int64}, rest...)::Matrix{Int64}
 
     return newparticles
 end
-
 function moveparticles!(particles::Matrix{Int64}, Σ::Matrix{Float64}, framesize::Tuple{Int64,Int64})
 
     width, height = framesize
@@ -80,32 +79,32 @@ end
 
 Σ₀ = zeros(4, 4)
 
-function likelihood(fr::Frame, fr′::Frame, particles, nextparticles, σ²ᵢ; rfsize)
+function likelihood(fr::Frame, fr′::Frame, particles, particles′, σ²ᵢ; rfsize)
     # Find likelihood of luminance
     I = getparticlevalues(fr, particles; rfsize)
-    I′ = getparticlevalues(fr′, nextparticles; rfsize)
+    I′ = getparticlevalues(fr′, particles′; rfsize)
     return pdf.(Normal(0, σ²ᵢ), @. (I - I′))
 end
 
 """
 Update particles and weights given the current frame and the next frame, a covariance matrix of motion Σ, and the luminance noise.
 """
-function particlestep(particles, w, fr::Frame, fr′::Frame; Σ, σ²ᵢ, trh, rfsize)
+function particlestep(particles, w, fr::Frame, fr′::Frame; Σ, σ²ᵢ, intensity, rfsize)
     N = size(particles, 1)
 
     # Compute realized particles
     particles′ = moveparticles(particles, Σ, size(fr))
     L = likelihood(fr, fr′, particles, particles′, σ²ᵢ; rfsize)
 
-    wᴬ = normalize(w .* L)
-    wᴱ = mean(wᴬ) * trh
+    updated_weights = normalize(w .* L)
+    cutoff = quantile(updated_weights, intensity)
 
     # Replace worst performing particles with theoretical particles
-    losers = wᴬ .< wᴱ
+    losers = updated_weights .< cutoff
     winners = sample((1:N)[.!losers], sum(losers))
 
     particles′[losers, :] .= particles′[winners, :]
-    wᴬ[losers] = wᴬ[winners]
+    updated_weights[losers] = updated_weights[winners]
 
-    return particles′, normalize(wᴬ)
+    return particles′, normalize(updated_weights)
 end

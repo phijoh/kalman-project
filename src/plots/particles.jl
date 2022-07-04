@@ -24,7 +24,7 @@ function plotparticledensity(particles::Matrix{Int64}, weights::Vector{Float64},
 
 end
 
-function scatterparticles(particles, fr; weights = nothing, kwargs...)
+function scatterparticles(particles, fr; weights=nothing, kwargs...)
     N = size(particles, 1)
     S = size(fr, 1)
 
@@ -32,7 +32,7 @@ function scatterparticles(particles, fr; weights = nothing, kwargs...)
 
     fig = heatmap(fr; aspect_ratio=1, xlims=(0, S), ylims=(0, S), color=:greys, kwargs...)
 
-    scatter!(fig, particles[:, 2], particles[:, 1], label=nothing, color=:darkred, alpha = alphas)
+    scatter!(fig, particles[:, 2], particles[:, 1], label=nothing, color=:darkred, alpha=alphas)
 
     return fig
 end
@@ -40,10 +40,9 @@ end
 function plotexpectedposition(particles, weights, fr; kwargs...)
     S = size(fr, 1)
     x, y = getexpectedposition(particles, weights)
-    Σ = getvariance(particles, weights)
+    Σ = sqrt.(getvariance(particles, weights))
 
-    Σₓ = sqrt.(Σ[1:2, 1:2])
-    N = MvNormal([x, y], Σₓ)
+    N = MvNormal([x, y], Σ[1:2, 1:2])
     pdfN(x, y) = pdf(N, [x, y])
 
     xs = ys = 0:1:S
@@ -53,6 +52,13 @@ function plotexpectedposition(particles, weights, fr; kwargs...)
         c=:grays, aspect_ratio=1,
         colorbar=false,
         xlims=ylims = (1, S), kwargs...
+    )
+
+    scatter!(
+        fig,
+        [x], [y];
+        markersize=2, markerstrokewidth=0,
+        label=nothing, c=:darkred
     )
 
     contour!(
@@ -65,11 +71,15 @@ function plotexpectedposition(particles, weights, fr; kwargs...)
     return fig
 end
 
-function plotangle(results, duration; before=20, after=10, labels=nothing, kwargs...)
-    S = size(results[:particles], 1)
+function plotangle(
+    results, duration;
+    labels=["speed", "opacity", "noise", "delay"],
+    kwargs...)
 
-    window = (duration-before):(duration+after)
-    θ = Matrix{Float64}(undef, length(window), S)
+    S, T = size(results[:particles])[1:2]
+    idxlabels = checkdifferencelabel(results[:specs])
+
+    θ = Matrix{Float64}(undef, T, S)
 
 
     for s in 1:S
@@ -77,17 +87,12 @@ function plotangle(results, duration; before=20, after=10, labels=nothing, kwarg
         particlesovertime = @view results[:particles][s, :, :, :]
         weightsovertime = @view results[:weights][s, :, :]
 
-        θ₀ = getexpectedangle(
-            results[:particles][s, duration-1, :, :],
-            results[:weights][s, duration-1, :]
-        )
-
-        for (i, t) in enumerate(window)
+        for t ∈ 1:T
             p = particlesovertime[t, :, 1:2]
             θₜ = xytoangle.(eachrow(p))
             w = weightsovertime[t, :]
 
-            θ[i, s] = θ₀ - θₜ'w
+            θ[t, s] = θₜ'w
         end
     end
 
@@ -97,19 +102,30 @@ function plotangle(results, duration; before=20, after=10, labels=nothing, kwarg
 
 
     for s in 1:S
-        label = !isnothing(labels) ? labels[s] : "specification $s"
-        plot!(varfig, window, θ[:, s]; label=label, kwargs...)
+
+        label = join(
+            ("$(t[1]) = $(t[2])"
+             for t ∈ zip(labels[idxlabels], results[:specs][s][idxlabels])),
+            ", "
+        )
+
+
+        plot!(varfig, 1:T, θ[:, s]; label=label, kwargs...)
     end
 
     vline!(varfig, [duration - 1], linecolor=:black, linestyle=:dot, label=nothing)
-    # vline!(varfig, [duration]; linestyle = :dash, c = :black, label = "Disappearance")
 
     return varfig
 end
 
-function plotprecision(results, duration; kwargs...)
+function plotprecision(
+    results, duration;
+    labels=["speed", "opacity", "noise", "delay"],
+    kwargs...
+)
 
-    S, T, _, _ = size(results[:particles])
+    S, T = size(results[:particles])[1:2]
+    idxlabels = checkdifferencelabel(results[:specs])
 
     σ = Matrix{Float64}(undef, T, S) # FIXME: We only use after duration anyway
 
@@ -123,26 +139,35 @@ function plotprecision(results, duration; kwargs...)
             # θₜ = xytoangle.(eachrow(p)) .* (180 / π)
             w = StatsBase.weights(weightsovertime[t, :])
 
-            σ[t, s] = var(p[:, 1], w) + var(p[:, 2], w)
+            σ[t, s] = 1 / (var(p[:, 1], w) + var(p[:, 2], w))
         end
     end
 
-    varfig = plot(
-        xlabel=L"t", ylabel=L"(\sigma_{x}^2 + \sigma_{y}^2)^{-1}";
-        legend=:outerright, kwargs...)
+    varfig = plot(;
+        xlabel=L"t",
+        ylabel=L"(\sigma_{x}^2 + \sigma_{y}^2)^{-1}",
+        legend=:top,
+        kwargs...
+    )
 
     plott = 1:T
 
     for s in 1:S
+
         precision = 1 ./ σ[plott, s]
 
-        plot!(varfig, plott, precision; label = s)
-      
+        label = join(
+            ("$(t[1]) = $(t[2])"
+             for t ∈ zip(labels[idxlabels], results[:specs][s][idxlabels])),
+            ", "
+        )
+
+        plot!(varfig, plott, precision; label=label)
+
     end
 
-    vline!(varfig, [duration - 1], linecolor=:black, linestyle=:dot,
-        label="stimulus duration")
-    # vline!(varfig, [duration]; linestyle = :dash, c = :black, label = "Disappearance")
+    vline!(varfig, [duration - 1], linecolor=:black, linestyle=:dot, label=nothing)
+
 
     return varfig
 
