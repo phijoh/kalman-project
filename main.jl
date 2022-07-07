@@ -18,7 +18,6 @@ include("src/loadenv.jl")
 include("src/utilities/algos.jl")
 include("src/utilities/matrix.jl")
 include("src/utilities/datautils.jl")
-include("src/utilities/distributions.jl")
 include("src/utilities/particles.jl")
 
 # Data
@@ -80,12 +79,6 @@ specifications = product(
                      [false, true], # Dynamic noise
                      [τₘ(60)] # Neural delay
                  ) |> collect |> vec # Necessary to preserve order
-
-specifications = [
-    (0.16, 1, false, 0),
-    (0.16, 1, false, τₘ(60)),
-    (0.16, 1, true, τₘ(60)),
-]
 
 S = length(specifications)
 dimensions = 4
