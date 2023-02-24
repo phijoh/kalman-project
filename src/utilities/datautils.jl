@@ -2,24 +2,6 @@ rgbtogrey(frames) = mean(frames; dims=4)
 scale(frames) = frames ./ 255
 
 """
-Reads the stimulus .mat file
-"""
-function ingeststimulus(filepath)
-    vars = matread(filepath)
-
-    if "frames" in keys(vars)
-
-        greyframes = vars["frames"] |> rgbtogrey |> squeeze |> scale
-        showframe = greyframes[2:end, :, :] # Skip title frame
-
-        return showframe
-
-    else
-        throw("No frames found in the .mat file")
-    end
-end
-
-"""
 Compute velocity given position matrix and time step
 """
 function getvelocity(x::Matrix{Float64}, Δt::Float64)
@@ -33,50 +15,42 @@ function getvelocity(x::Matrix{Float64}, Δt::Float64)
     return u
 end
 
-"""
-Make constructor for frames from TG_test.mat
-"""
-function framegeneratorfactory(tgfile)
-    
-    wedge = tgfile["stimMask"]
-
-    S = size(wedge, 1)
-
-    function framegenerator(inducerduration::Int64, noiseduration::Int64, speed::Float64, opacity::Float64; dynamic=false)::Vector{Frame}
-
-        Δθ = deg2rad(speed / mstoframes(1))
-        
-        currentwedge = opacity * copy(wedge)
-        inducernoise = rand(S, S)
-        alphablend(frame) = @. frame + inducernoise * (1 - frame) 
-
-        inducerframes = ceil(Int64, mstoframes(inducerduration))
-        noiseframes = ceil(Int64, mstoframes(noiseduration))
-
-        T = inducerframes + noiseframes
-        frames = zeros(T, S, S)
-        frames[1, :, :] = alphablend(currentwedge)
-        
-        for inducerframe in 2:inducerframes 
-
-            currentwedge = imrotate(currentwedge, Δθ, axes(currentwedge))
-            replace!(currentwedge, NaN => 0.)
-
-            frames[inducerframe, :, :] = alphablend(currentwedge)
-
-        end
-
-        @threads for noiseframe in inducerframes:T frames[noiseframe, :, :] = dynamic ? rand(S, S) : inducernoise end
-
-        return [Frame(frames[t, :, :]) for t ∈ 1:T]
-
-    end 
-
-    return framegenerator
-
-end
-
-
 function mstoframes(ms)
     ms * framespersecond / 1000
 end
+
+function framegenerator(inducerduration::Int64, noiseduration::Int64, speed::Int64, opacity::Float64; dynamic=false, framesize=500::Int64, wedgesize=42::Int64)::Vector{Frame}
+
+    wedge = zeros(Bool,framesize,framesize)
+    wedge[1:wedgesize,round(Int,framesize/2-wedgesize/2):round(Int,framesize/2+wedgesize/2)] .= 1
+    
+    currentwedge = opacity * copy(wedge)
+    inducernoise = rand(framesize, framesize)
+    alphablend(frame) = @. frame + inducernoise * (1 - frame) 
+
+    inducerframes = ceil(Int64, mstoframes(inducerduration))
+    noiseframes = ceil(Int64, mstoframes(noiseduration))
+
+    T = inducerframes + noiseframes
+    frames = zeros(T, framesize, framesize)
+    frames[1, :, :] = alphablend(currentwedge)
+
+    t = Translation(-speed, 0)
+    
+    for inducerframe in 2:inducerframes 
+
+        currentwedge = warp(currentwedge, t, indices_spatial(currentwedge), 0)
+
+        frames[inducerframe, :, :] = alphablend(currentwedge)
+
+    end
+
+    @threads for noiseframe in inducerframes:T 
+        frames[noiseframe, :, :] = dynamic ? 
+            rand(framesize, framesize) : 
+            inducernoise 
+    end
+
+    return [Frame(frames[t, :, :]) for t ∈ 1:T]
+
+end 

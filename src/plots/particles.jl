@@ -38,6 +38,7 @@ function scatterparticles(particles, fr; weights=nothing, kwargs...)
 end
 
 function plotexpectedposition(particles, weights, fr; kwargs...)
+    # FIXME: x and y position inverted
     S = size(fr, 1)
     x, y = getexpectedposition(particles, weights)
     Σ = sqrt.(getvariance(particles, weights))

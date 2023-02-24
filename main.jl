@@ -39,7 +39,7 @@ function runestimation(inducerduration, noiseduration; τ, speed, opacity, dynam
 
     verbose && println("Generating frames...")
 
-    frames = makeframes(inducerduration, noiseduration, speed, opacity; dynamic=dynamic)
+    frames = framegenerator(inducerduration, noiseduration, speed, opacity; dynamic=dynamic)
 
     verbose && println("...estimating position...")
 
@@ -67,23 +67,22 @@ noiseduration = 400 # Overshoot ms
 
 Tᵢ = ceil(Int64, mstoframes(inducerduration))
 Tₙ = ceil(Int64, mstoframes(noiseduration))
-makeframes = loadgeneratedframe(datapath)
 
 T = Tᵢ + Tₙ # Total time
 τₘ(ms) = ceil(Int64, mstoframes(ms)) # Neural delay in ms, TODO: implement this.
-rfsize = 1
+rfsize = 2
 
 specifications = product(
-                     [0.16], # Speeds
+                     [2], # Speeds
                      [1.0], # Opacity
-                     [false, true], # Dynamic noise
+                     [false,true], # Dynamic noise
                      [τₘ(60)] # Neural delay
                  ) |> collect |> vec # Necessary to preserve order
 
 S = length(specifications)
 dimensions = 4
 N = 2^16
-intensity = 0.95  # the quantile used for cutoff
+intensity = 0.8  # the quantile used for cutoff
 
 results = Dict(
     :particles => Array{Int64}(undef, S, T, N, dimensions),
