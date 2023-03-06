@@ -5,6 +5,10 @@ function mstoframes(ms)
     ms * framespersecond / 1000
 end
 
+function framestoms(frames::Int64)
+    frames * (1000 ÷ framespersecond)
+end
+
 function framegenerator(inducerduration::Int64, noiseduration::Int64, speed::Int64, opacity::Float64; dynamic=false, framesize=500::Int64, wedgesize=42::Int64)::Vector{Frame}
 
     wedge = zeros(Bool,framesize,framesize)

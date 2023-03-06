@@ -9,7 +9,7 @@ function plotparticledensity!(fig, p::Matrix{Int64}, w::Vector{Float64}, fr::Fra
     width, height = size(fr)
     N = size(p, 1)
 
-    y, x = getexpectedposition(p, w)
+    y, x, u, v = getexpectedposition(p, w)
     Σ = getvariance(p, w)
 
     N = MvNormal([x, y], Σ[1:2, 1:2])
@@ -114,29 +114,25 @@ function plotposition(
     σ = Matrix{Float64}(undef, T, S)
 
     for s in 1:S
-
         particlesovertime = @view results[:particles][s, :, :, :]
         weightsovertime = @view results[:weights][s, :, :]
 
         for t in 1:T
-            p = particlesovertime[t, :, 1:2]
+            p = particlesovertime[t, :, :]
             w = weightsovertime[t, :]
 
             X[t, s] = getexpectedposition(p, w)[dim]
-            σ[t, s] = var(p[:, 1], StatsBase.Weights(w))
+            σ[t, s] = var(p[:, dim], StatsBase.Weights(w)) / sqrt.(length(p[:, dim]))
         end
     end
 
-    varfig = plot(;
-        xlabel="\$t\$",
-        legend=:top,
-        kwargs...
-    )
-
+    varfig = plot(;xlabel="\$t\$", ylabel = "Estimation error", legend=:top, kwargs...)
     plott = 1:T
 
     for s in 1:S
-
+        speed = results[:specs][s][1]
+        
+        wedgeposition = (500 - 21) .- range(0; step = speed, length = T)
 
         label = join(
             ("$(t[1]) = $(t[2])"
@@ -144,12 +140,11 @@ function plotposition(
             ", "
         )
 
-        plot!(varfig, plott, X[:, s]; label=label)
+        plot!(varfig, plott, X[:, s]; label=label, ribbon = σ[:, s], fillalpha = 0.1)
 
     end
 
     vline!(varfig, [duration - 1], linecolor=:black, linestyle=:dot, label=nothing)
-
 
     return varfig
 

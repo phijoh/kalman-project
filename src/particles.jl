@@ -56,6 +56,8 @@ function moveparticles(particles::Matrix{Int64}, rest...)::Matrix{Int64}
 end
 function moveparticles!(particles::Matrix{Int64}, Σ::Matrix{Float64}, framesize::Tuple{Int64,Int64})
 
+    γ = inv(1 + 1/9) # FIXME: make parameter
+
     width, height = framesize
     N = size(particles, 1)
 
@@ -65,7 +67,7 @@ function moveparticles!(particles::Matrix{Int64}, Σ::Matrix{Float64}, framesize
     V = particles[:, 3:4]
 
     x′ = x + V + ν[1:2, :]'
-    V′ = V + ν[3:4, :]'
+    V′ = γ * V + ν[3:4, :]'
 
     particles[:, 1] = torus.(x′[:, 1], width)
     particles[:, 2] = torus.(x′[:, 2], height)

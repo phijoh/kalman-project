@@ -2,8 +2,10 @@ function getexpectedposition(p::Matrix{Int64}, w::Vector{Float64})
 
     x = mean(p[:, 1], StatsBase.weights(w))
     y = mean(p[:, 2], StatsBase.weights(w))
+    u = mean(p[:, 3], StatsBase.weights(w))
+    v = mean(p[:, 4], StatsBase.weights(w))
 
-    return x, y
+    return x, y, u, v
 end
 
 function getvariance(p::Matrix{Int64}, w::Vector{Float64})

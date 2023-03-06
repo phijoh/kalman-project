@@ -62,27 +62,27 @@ function runestimation(inducerduration, noiseduration; τ, speed, opacity, dynam
 
 end
 
-inducerduration = 900 # Estimation ms 
-noiseduration = 400 # Overshoot ms
+inducerduration = 500 # Estimation ms 
+noiseduration = 300 # Overshoot ms
 
 Tᵢ = ceil(Int64, mstoframes(inducerduration))
 Tₙ = ceil(Int64, mstoframes(noiseduration))
 
 T = Tᵢ + Tₙ # Total time
 τₘ(ms) = ceil(Int64, mstoframes(ms)) # Neural delay in ms, TODO: implement this.
-rfsize = 2
+rfsize = 5
 
 specifications = product(
-                     [2], # Speeds
-                     [1.0], # Opacity
-                     [false,true], # Dynamic noise
+                     [3], # Speeds
+                     [1.], # Opacity
+                     [false, true], # Dynamic noise
                      [τₘ(60)] # Neural delay
                  ) |> collect |> vec # Necessary to preserve order
 
 S = length(specifications)
 dimensions = 4
-N = 2^16
-intensity = 0.8  # the quantile used for cutoff
+N = 2^14
+intensity = 0.9  # the quantile used for cutoff
 
 results = Dict(
     :particles => Array{Int64}(undef, S, T, N, dimensions),
@@ -108,36 +108,42 @@ for (s, specs) in enumerate(specifications)
     results[:weights][s, :, :] = weightsovertime
 end
 
-verbose && println("Plotting...")
-precfig = plotprecision(results, Tᵢ; dpi=180)
-savefig(precfig, joinpath(plotpath, "precision.png"))
-
-anglefig = plotangle(results, Tᵢ; dpi=180)
-savefig(anglefig, joinpath(plotpath, "angle.png"))
 
 
 if shallplot
+    
+    verbose && println("Plotting...")
+    precfig = plotprecision(results, Tᵢ; dpi=180, legend = :topleft)
+    savefig(precfig, joinpath(plotpath, "precision.png"))
+
+    posfig = plotposition(results, Tᵢ, 2; dpi=180, legend = :topright, ylabel = "\$x\$")
+    savefig(posfig, joinpath(plotpath, "position.png"))
+
+    velfig = plotposition(results, Tᵢ, 4; dpi=180, legend = :topleft, ylabel = "\$v\$")
+    savefig(velfig, joinpath(plotpath, "velocity.png"))
 
 
-    for (s, specs) ∈ enumerate(specifications)
+    if false
+        for (s, specs) ∈ enumerate(specifications)
 
-        verbose && println("Making gif for specification $(s) / $(length(specifications))...")
+            verbose && println("Making gif for specification $(s) / $(length(specifications))...")
 
-        speed, opacity, dynamic, τ = specs
-        specname = replace(join(specs, "-"), "." => "_")
+            speed, opacity, dynamic, τ = specs
+            specname = replace(join(specs, "-"), "." => "_")
 
-        frames = results[:frames][s]
-        particlesovertime = results[:particles][s, :, :, :]
-        weightsovertime = results[:weights][s, :, :]
+            frames = results[:frames][s]
+            particlesovertime = results[:particles][s, :, :, :]
+            weightsovertime = results[:weights][s, :, :]
 
-        anim = @animate for t ∈ 1:T
-            particles = particlesovertime[t, :, :]
-            weights = weightsovertime[t, :]
+            anim = @animate for t ∈ 1:T
+                p = particlesovertime[t, :, :]
+                w = weightsovertime[t, :]
+                fr = frames[t]
 
-            plotexpectedposition(particles, weights, frames[t]; title=latexstring("\$ t = $(t - τ) \$"))
+                plotparticledensity(p, w, fr; title="\$t = $(t - τ) \$")
+            end
+
+            gif(anim, joinpath(plotpath, "estpos-$specname.gif"), fps=15)
         end
-
-        gif(anim, joinpath(plotpath, "estpos-$specname.gif"), fps=15)
     end
-
 end
