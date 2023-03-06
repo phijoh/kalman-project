@@ -1,20 +1,6 @@
-rgbtogrey(frames) = mean(frames; dims=4)
-scale(frames) = frames ./ 255
-
 """
-Compute velocity given position matrix and time step
+ms to number of frames
 """
-function getvelocity(x::Matrix{Float64}, Δt::Float64)
-    T, M = size(x)
-    u = zeros(T, M)
-
-    @threads for t in 1:(T - 1) 
-        u[t, :] = (x[t + 1, :] - x[t, :]) / Δt 
-    end
-
-    return u
-end
-
 function mstoframes(ms)
     ms * framespersecond / 1000
 end

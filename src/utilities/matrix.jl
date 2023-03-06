@@ -1,5 +1,3 @@
-Id(M) = Matrix{Float64}(LinearAlgebra.I, M, M)
-
 """
 Drop singleton dimensions
 """
@@ -8,6 +6,6 @@ function squeeze(A)
 end
 
 
-function normalize(x)
+function normalise(x)
     x ./ sum(x)
 end

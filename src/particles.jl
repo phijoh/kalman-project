@@ -1,6 +1,4 @@
-
-
-function selectrandomparticles(framesize, nparticles::Int64)
+function samplerandomparticles(framesize, nparticles::Int64)
 
     w, h = framesize
 
@@ -19,7 +17,6 @@ function selectrandomparticles(framesize, nparticles::Int64)
     weights = ones(nparticles) ./ nparticles
 
     return particles, weights
-
 end
 
 """
@@ -77,8 +74,6 @@ function moveparticles!(particles::Matrix{Int64}, Σ::Matrix{Float64}, framesize
 
 end
 
-Σ₀ = zeros(4, 4)
-
 function likelihood(fr::Frame, fr′::Frame, particles, particles′, σ²ᵢ; rfsize)
     # Find likelihood of luminance
     I = getparticlevalues(fr, particles; rfsize)
@@ -96,7 +91,7 @@ function particlestep(particles, w, fr::Frame, fr′::Frame; Σ, σ²ᵢ, intens
     particles′ = moveparticles(particles, Σ, size(fr))
     L = likelihood(fr, fr′, particles, particles′, σ²ᵢ; rfsize)
 
-    updated_weights = normalize(w .* L)
+    updated_weights = normalise(w .* L)
     cutoff = quantile(updated_weights, intensity)
 
     # Replace worst performing particles with theoretical particles
@@ -106,5 +101,5 @@ function particlestep(particles, w, fr::Frame, fr′::Frame; Σ, σ²ᵢ, intens
     particles′[losers, :] .= particles′[winners, :]
     updated_weights[losers] = updated_weights[winners]
 
-    return particles′, normalize(updated_weights)
+    return particles′, normalise(updated_weights)
 end

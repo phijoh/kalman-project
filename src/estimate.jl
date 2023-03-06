@@ -3,7 +3,7 @@ function estimateparticle(T, N, frames; dimensions=4, verbose=false, intensity, 
     σ²ᵢ = mean(var.(frames))
 
     # Initialize weights and particles
-    particles₀, weights₀ = selectrandomparticles(size(first(frames)), N)
+    particles₀, weights₀ = samplerandomparticles(size(first(frames)), N)
 
     weightsovertime = Array{Float64}(undef, T, N)
     weightsovertime[1, :] = weights₀
