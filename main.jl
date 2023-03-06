@@ -1,16 +1,17 @@
-using JLD
-using LinearAlgebra
-using Random, Distributions, StatsBase
-
-using MAT, ImageFiltering
-using Images, Rotations, CoordinateTransformations
 using Base.Threads, Base.Iterators
 
-using Printf, LaTeXStrings
-using Plots, StatsPlots
-using DotEnv
+using LinearAlgebra
+using Random
+using Distributions
+using StatsBase
+
+using Images
+using CoordinateTransformations
+
+using Plots
 
 # Environment
+using DotEnv
 include("src/utilities/env.jl")
 include("src/loadenv.jl")
 
@@ -22,12 +23,11 @@ include("src/utilities/particles.jl")
 
 # Data
 include("src/frame.jl")
-include("src/loadposition.jl")
 
 # Estimation
-include("src/estimate.jl")
 include("src/particles.jl")
 include("src/compensate.jl")
+include("src/estimate.jl")
 
 # Plots
 include("src/plots/extrapolations.jl")
