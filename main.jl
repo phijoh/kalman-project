@@ -73,8 +73,8 @@ T = Tᵢ + Tₙ # Total time
 rfsize = 5
 
 specifications = product(
-                     [3], # Speeds
-                     [1.], # Opacity
+                     [2], # Speeds
+                     [1.0], # Opacity
                      [false, true], # Dynamic noise
                      [τₘ(60)] # Neural delay
                  ) |> collect |> vec # Necessary to preserve order
@@ -111,15 +111,15 @@ end
 
 
 if shallplot
-    
+
     verbose && println("Plotting...")
-    precfig = plotprecision(results, Tᵢ; dpi=180, legend = :topleft)
+    precfig = plotprecision(results, Tᵢ; dpi=180, legend=:topleft)
     savefig(precfig, joinpath(plotpath, "precision.png"))
 
-    posfig = plotposition(results, Tᵢ, 2; dpi=180, legend = :topright, ylabel = "\$x\$")
+    posfig = plotposition(results, Tᵢ, 2; dpi=180, legend=:topright, ylabel="\$x\$")
     savefig(posfig, joinpath(plotpath, "position.png"))
 
-    velfig = plotposition(results, Tᵢ, 4; dpi=180, legend = :topleft, ylabel = "\$v\$")
+    velfig = plotposition(results, Tᵢ, 4; dpi=180, legend=:topleft, ylabel="\$v\$")
     savefig(velfig, joinpath(plotpath, "velocity.png"))
 
 
