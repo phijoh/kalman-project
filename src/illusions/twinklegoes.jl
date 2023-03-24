@@ -17,19 +17,16 @@ function generateframes(
     ] .= model.opacity
         
     inducernoise = randomframe(widthframe, heightframe) # noise in the inducer phase
-    
-    O = Frame(ones(heightframe, widthframe))
-    alphablend(frame) = frame + inducernoise * (O - frame)
 
     Tᵢ = mstoframes(model.inducerduration)
     Tₙ = mstoframes(model.noiseduration)
 
     currentwedge = copy(wedge)
-    frames = [alphablend(wedge)]
+    frames = [wedge * inducernoise]
 
     for t in 2:Tᵢ 
         currentwedge = translateframe(currentwedge, model.speed, 0)
-        push!(frames, alphablend(currentwedge))
+        push!(frames, currentwedge * inducernoise)
     end
 
     for t in Tᵢ:(Tᵢ + Tₙ) 

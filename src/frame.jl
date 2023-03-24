@@ -30,7 +30,7 @@ end
 Redefine product between to frames to be element wise
 """
 function Base.:*(A::Frame, B::Frame)
-    Frame(A.M .* B.M)
+    Frame(@. A.M + B.M * (1 - A.M))
 end
 
 function Base.:+(A::Frame, B::Frame)
