@@ -3,7 +3,7 @@ Estimates N particles using the data contained in the frames.
 """
 function estimateparticles(
     N, frames::Vector{Frame}; 
-    dimensions=4, quantilecutoff = 0.9, rfsize = 3,
+    quantilecutoff = 0.9, rfsize = 5,
     verbose=false)
 
     T = length(frames)
@@ -16,19 +16,19 @@ function estimateparticles(
     weightsovertime = Array{Float64}(undef, T, N)
     weightsovertime[1, :] = weights₀
 
-    particlesovertime = Array{Int64}(undef, T, N, dimensions)
+    particlesovertime = Array{Int64}(undef, T, N, 4)
     particlesovertime[1, :, :] = particles₀
 
     # Initialize prior
     Σ = getvariance(particles₀, weights₀)
 
-    for tᵈ in 2:T
-        verbose && print("Iteration tᵈ = $tᵈ / $T \r")
+    for t in 2:T
+        verbose && print("Iteration t = $t / $T \r")
 
         # One particle step with a random sample from the prior
-        particles = particlesovertime[tᵈ-1, :, :]
-        w = weightsovertime[tᵈ-1, :]
-        fr, fr′ = frames[tᵈ-1], frames[tᵈ]
+        particles = particlesovertime[t-1, :, :]
+        w = weightsovertime[t-1, :]
+        fr, fr′ = frames[t-1], frames[t]
 
         particles, weights = particlestep(
             particles, w, fr, fr′;
@@ -38,8 +38,8 @@ function estimateparticles(
         Σ .= getvariance(particles, weights)
 
         # Save particles and chain
-        particlesovertime[tᵈ, :, :] = particles
-        weightsovertime[tᵈ, :] = weights
+        particlesovertime[t, :, :] = particles
+        weightsovertime[t, :] = weights
     end
 
     return particlesovertime, weightsovertime

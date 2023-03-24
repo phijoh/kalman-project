@@ -23,9 +23,6 @@ end
 Get the luminance around (rfsize) the particles
 """
 function getparticlevalues(frame::Frame, particles::Matrix{Int64}; rfsize=1)
-
-    # TODO: smooth whole frame?
-
     width = size(frame, 1) # FIXME: What happens with height?
     N = size(particles, 1)
 
@@ -86,7 +83,7 @@ end
 """
 Update particles and weights given the current frame and the next frame, a covariance matrix of motion Σ, and the luminance noise.
 """
-function particlestep(particles, w, fr::Frame, fr′::Frame; Σ, σ²ᵢ, intensity, rfsize)
+function particlestep(particles, w, fr::Frame, fr′::Frame; Σ, σ²ᵢ, quantilecutoff, rfsize)
     N = size(particles, 1)
 
     # Compute realized particles
@@ -94,7 +91,7 @@ function particlestep(particles, w, fr::Frame, fr′::Frame; Σ, σ²ᵢ, intens
     L = likelihood(fr, fr′, particles, particles′, σ²ᵢ; rfsize)
 
     updated_weights = normalise(w .* L)
-    cutoff = quantile(updated_weights, intensity)
+    cutoff = quantile(updated_weights, quantilecutoff)
 
     # Replace worst performing particles with theoretical particles
     losers = updated_weights .< cutoff

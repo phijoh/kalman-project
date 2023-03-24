@@ -1,24 +1,23 @@
-function plotparticledensity(p::Matrix{Int64}, w::Vector{Float64}, fr::Frame; plotargs...)
-    figure = plot()
-    plotparticledensity!(figure, p, w, fr; plotargs...)
+function plotparticledensity(particles::Matrix{Int64}, weights::Vector{Float64}, frame::Frame; plotargs...)
+    fig = plot()
+    plotparticledensity!(fig, particles, weights, frame; plotargs...)
 
-    return figure
+    return fig
 end
-function plotparticledensity!(fig, p::Matrix{Int64}, w::Vector{Float64}, fr::Frame; plotargs...)
+function plotparticledensity!(fig, particles::Matrix{Int64}, weights::Vector{Float64}, fr::Frame; plotargs...)
 
     width, height = size(fr)
-    N = size(p, 1)
+    N = size(particles, 1)
 
-    y, x, u, v = getexpectedposition(p, w)
-    Σ = getvariance(p, w)
+    x, y, u, v = getexpectedposition(particles, weights)
+    Σ = getvariance(particles, weights)
 
     N = MvNormal([x, y], Σ[1:2, 1:2])
     xs = 1:1:width
     ys = 1:1:height
     f̄ = pdf(N, [x, y])
 
-    heatmap!(fig,
-        xs, ys, 1 .- fr;
+    plotframe!(fig, fr;
         c = :grays,
         aspect_ratio=1,
         xlabel="\$x\$", ylabel="\$y\$",
@@ -27,8 +26,8 @@ function plotparticledensity!(fig, p::Matrix{Int64}, w::Vector{Float64}, fr::Fra
     )
 
     contour!(fig,
-        xs, ys, (x, y) -> pdf(N, [x, y]);
-        alpha = 1., clims = (0, f̄)
+        xs, ys, (x, y) -> pdf(N, [x, y]) / f̄;
+        alpha = 1.
     )
 
     return fig
@@ -47,103 +46,100 @@ function scatterparticles(particles, fr; weights=nothing, kwargs...)
     return fig
 end
 
-
-function plotprecision(
-    results, duration;
-    labels=["speed", "opacity", "noise", "delay"],
-    kwargs...)
-
-    S, T = size(results[:particles])[1:2]
-    idxlabels = checkdifferencelabel(results[:specs])
-
-    σ = Matrix{Float64}(undef, T, S) # FIXME: We only use after duration anyway
-
-    for s in 1:S
-
-        particlesovertime = @view results[:particles][s, :, :, :]
-        weightsovertime = @view results[:weights][s, :, :]
-
-        for t in 1:T
-            p = particlesovertime[t, :, 1:2]
-            w = StatsBase.weights(weightsovertime[t, :])
-
-            σ[t, s] = 1 / (var(p[:, 1], w) + var(p[:, 2], w))
-        end
-    end
-
-    varfig = plot(;
-        xlabel="\$t\$",
-        ylabel="\$(\\sigma_{x}^2 + \\sigma_{y}^2)^{-1}\$",
-        legend=:top,
-        kwargs...
-    )
-
-    plott = 1:T
-
-    for s in 1:S
-
-        precision = σ[plott, s]
-
-        label = join(
-            ("$(t[1]) = $(t[2])"
-             for t ∈ zip(labels[idxlabels], results[:specs][s][idxlabels])),
-            ", "
-        )
-
-        plot!(varfig, plott, precision; label=label)
-
-    end
-
-    vline!(varfig, [duration - 1], linecolor=:black, linestyle=:dot, label=nothing)
-
-
-    return varfig
-
-end
-
 function plotposition(
-    results, duration, dim::Int64;
-    labels=["speed", "opacity", "noise", "delay"],
-    kwargs...)
+    results, models::Vector{TwinkleGoesParameters}; 
+    variableindex = 1, # x = 1 and y = 2
+    labels, kwargs...)
     
-    S, T = size(results[:particles])[1:2]
-    idxlabels = checkdifferencelabel(results[:specs])
+    model = first(models)
+    Tᵢ = mstoframes(model.inducerduration)
+    Tₙ = mstoframes(model.noiseduration)
+    T = Tᵢ + Tₙ
+
+    S = length(models)
+
+    labels = isnothing(labels) ? ["model $i" for i in 1:S] : labels
 
     X = Matrix{Float64}(undef, T, S) 
     σ = Matrix{Float64}(undef, T, S)
 
-    for s in 1:S
-        particlesovertime = @view results[:particles][s, :, :, :]
-        weightsovertime = @view results[:weights][s, :, :]
+    for s ∈ 1:S
+        particlesovertime, weightsovertime, frames = results[s]
+        model = models[s]
+
 
         for t in 1:T
             p = particlesovertime[t, :, :]
             w = weightsovertime[t, :]
 
-            X[t, s] = getexpectedposition(p, w)[dim]
-            σ[t, s] = var(p[:, dim], StatsBase.Weights(w)) / sqrt.(length(p[:, dim]))
+            X[t, s] = getexpectedposition(p, w)[variableindex]
+            σ[t, s] = var(p[:, variableindex], StatsBase.Weights(w)) / sqrt.(length(p[:, variableindex]))
         end
     end
 
-    varfig = plot(;xlabel="\$t\$", ylabel = "Estimation error", legend=:top, kwargs...)
-    plott = 1:T
+    wedgeposition = Vector{Float64}(undef, T)
+    wedgeposition[1:Tᵢ] = range(21; step = first(models).speed, length = Tᵢ)
+    wedgeposition[(Tᵢ + 1):end] .= wedgeposition[Tᵢ]
 
-    for s in 1:S
-        speed = results[:specs][s][1]
-        
-        wedgeposition = (500 - 21) .- range(0; step = speed, length = T)
+    plott = framestoms.(1:T)
 
-        label = join(
-            ("$(t[1]) = $(t[2])"
-            for t ∈ zip(labels[idxlabels], results[:specs][s][idxlabels])),
-            ", "
-        )
+    varfig = plot(plott, wedgeposition; xlabel="\$t\$", ylabel = "Estimated position", legend=:topleft, label = "Wedge position", c = :black, linestyle = :dash, ylims = (0, Inf), kwargs...)
 
-        plot!(varfig, plott, X[:, s]; label=label, ribbon = σ[:, s], fillalpha = 0.1)
-
+    for s in 1:S        
+        plot!(varfig, plott, X[:, s]; label=labels[s], ribbon = σ[:, s], fillalpha = 0.1)
     end
 
-    vline!(varfig, [duration - 1], linecolor=:black, linestyle=:dot, label=nothing)
+    vline!(varfig, [framestoms(Tᵢ)], linecolor=:black, linestyle=:dot, label=nothing)
+
+    return varfig
+
+end
+
+function plotvelocity(
+    results, models::Vector{TwinkleGoesParameters}; 
+    variableindex = 1, # x = 1 and y = 2
+    T₀ = 200,
+    labels, kwargs...)
+    
+    model = first(models)
+    Tᵢ = mstoframes(model.inducerduration)
+    Tₙ = mstoframes(model.noiseduration)
+    T = Tᵢ + Tₙ
+
+    S = length(models)
+
+    labels = isnothing(labels) ? ["model $i" for i in 1:S] : labels
+
+    X = Matrix{Float64}(undef, T, S) 
+    σ = Matrix{Float64}(undef, T, S)
+
+    for s ∈ 1:S
+        particlesovertime, weightsovertime, frames = results[s]
+        model = models[s]
+
+
+        for t in 1:T
+            p = particlesovertime[t, :, :]
+            w = weightsovertime[t, :]
+
+            X[t, s] = getexpectedposition(p, w)[2 + variableindex]
+            σ[t, s] = var(p[:, variableindex], StatsBase.Weights(w)) / sqrt.(length(p[:, variableindex]))
+        end
+    end
+
+    wedgevelocity = Vector{Float64}(undef, T)
+    wedgevelocity[1:Tᵢ] .= speed
+    wedgevelocity[(Tᵢ + 1):end] .= 0.
+
+    plott = framestoms.(1:T)
+
+    varfig = plot(plott, wedgevelocity; xlabel="\$t\$", ylabel = "Estimated position", legend=:topleft, label = "Wedge velocity", c = :black, linestyle = :dash, kwargs...)
+
+    for s in 1:S        
+        plot!(varfig, plott, X[:, s]; label=labels[s], ribbon = σ[:, s], fillalpha = 0.1)
+    end
+
+    vline!(varfig, [framestoms(Tᵢ)], linecolor=:black, linestyle=:dot, label=nothing)
 
     return varfig
 
