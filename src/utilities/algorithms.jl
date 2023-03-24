@@ -1,3 +1,6 @@
+"""
+Creates labels when plotting under different specifications
+"""
 function checkdifferencelabel(list)
 
     n = length(first(list))

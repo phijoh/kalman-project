@@ -1,6 +1,14 @@
-function estimateparticle(T, N, frames; dimensions=4, verbose=false, intensity, rfsize)
+"""
+Estimates N particles using the data contained in the frames.
+"""
+function estimateparticles(
+    N, frames::Vector{Frame}; 
+    dimensions=4, quantilecutoff = 0.9, rfsize = 3,
+    verbose=false)
 
-    σ²ᵢ = mean(var.(frames))
+    T = length(frames)
+
+    σ²ᵢ = mean(var.(frames)) # Get the luminance variance
 
     # Initialize weights and particles
     particles₀, weights₀ = samplerandomparticles(size(first(frames)), N)
@@ -24,7 +32,7 @@ function estimateparticle(T, N, frames; dimensions=4, verbose=false, intensity, 
 
         particles, weights = particlestep(
             particles, w, fr, fr′;
-            Σ, σ²ᵢ, rfsize, intensity
+            Σ, σ²ᵢ, rfsize, quantilecutoff
         )
 
         Σ .= getvariance(particles, weights)

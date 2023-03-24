@@ -51,8 +51,7 @@ end
 function plotprecision(
     results, duration;
     labels=["speed", "opacity", "noise", "delay"],
-    kwargs...
-)
+    kwargs...)
 
     S, T = size(results[:particles])[1:2]
     idxlabels = checkdifferencelabel(results[:specs])
@@ -105,8 +104,8 @@ end
 function plotposition(
     results, duration, dim::Int64;
     labels=["speed", "opacity", "noise", "delay"],
-    kwargs...
-)
+    kwargs...)
+    
     S, T = size(results[:particles])[1:2]
     idxlabels = checkdifferencelabel(results[:specs])
 

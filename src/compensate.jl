@@ -1,3 +1,6 @@
+"""
+Neural delay compensation. Extrapolate the particles forward by τ.
+"""
 function compensate(particles::Matrix{Int64}, τ::Int64, framesize::NTuple{2,Int64})
 
     compensatedparticles = copy(particles)
@@ -11,12 +14,14 @@ function compensate(particles::Matrix{Int64}, τ::Int64, framesize::NTuple{2,Int
 
 end
 
-function sequencecompensation(
+"""
+Object tracking with neural delay. For t < τ, use initial conditions. For t ≥ τ, compensate. 
+"""
+function trackwithdelay(
     particlesovertime::Array{Int64,3},
     weightsovertime::Matrix{Float64},
     τ::Int64, framesize::NTuple{2,Int64};
-    verbose=false
-)
+    verbose=false)
 
     Tₑ, N, dims = size(particlesovertime)
     T = Tₑ + τ
