@@ -133,7 +133,7 @@ function plotvelocity(
 
     plott = framestoms.(1:T)
 
-    varfig = plot(plott, wedgevelocity; xlabel="\$t\$", ylabel = "Estimated position", legend=:topleft, label = "Wedge velocity", c = :black, linestyle = :dash, kwargs...)
+    varfig = plot(plott, wedgevelocity; xlabel="\$t\$", ylabel = "Estimated velocity", legend=:topleft, label = "Wedge velocity", c = :black, linestyle = :dash, kwargs...)
 
     for s in 1:S        
         plot!(varfig, plott, X[:, s]; label=labels[s], ribbon = σ[:, s], fillalpha = 0.1)
