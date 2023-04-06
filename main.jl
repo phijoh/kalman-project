@@ -91,9 +91,9 @@ plotposition(results, models; labels = ["Static", "Dynamic"])
 plotvelocity(results, models; labels = ["Static", "Dynamic"])
 
 # Gif of localisation
-particlesovertime, weightsovertime, frames = first(results)
+particlesovertime, weightsovertime, frames = last(results)
 anim = @animate for (t, frame) ∈ enumerate(frames)
-    particles = results[1][t, :, :]
+    particles = particlesovertime[t, :, :]
     weights = weightsovertime[t, :]
 
     plotparticledensity(particles, weights, frame)
